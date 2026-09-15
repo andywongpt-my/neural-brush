@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { AppError } from '../app/AppError';
+import { BrushPipeline } from '../brush/BrushPipeline';
+import type { BrushFrame, BrushMode } from '../brush/BrushTypes';
 
 export class CanvasRenderer {
   private readonly scene = new THREE.Scene();
@@ -8,7 +10,8 @@ export class CanvasRenderer {
   private readonly material = new THREE.MeshBasicMaterial({ color: 0xffffff });
   private readonly plane = new THREE.Mesh(this.geometry, this.material);
   private readonly renderer: THREE.WebGLRenderer;
-  private texture: THREE.Texture | null = null;
+  private readonly brushPipeline: BrushPipeline;
+  private sourceTexture: THREE.Texture | null = null;
   private imageWidth = 0;
   private imageHeight = 0;
   private viewportWidth = 1;
@@ -27,6 +30,7 @@ export class CanvasRenderer {
       throw new AppError('WEBGL_UNAVAILABLE', cause);
     }
 
+    this.brushPipeline = new BrushPipeline(this.renderer);
     this.renderer.setClearColor(0x080b0d, 1);
     this.renderer.domElement.className = 'photo-canvas';
     this.renderer.domElement.setAttribute('aria-label', 'Photo canvas');
@@ -39,15 +43,30 @@ export class CanvasRenderer {
     nextTexture.colorSpace = THREE.SRGBColorSpace;
     nextTexture.needsUpdate = true;
 
-    const previousTexture = this.texture;
-    this.texture = nextTexture;
+    const previousTexture = this.sourceTexture;
+    this.sourceTexture = nextTexture;
     this.imageWidth = bitmap.width;
     this.imageHeight = bitmap.height;
-    this.material.map = nextTexture;
+    this.brushPipeline.initialize(nextTexture, bitmap.width, bitmap.height);
+    this.material.map = this.brushPipeline.texture;
     this.material.needsUpdate = true;
     this.fitPhoto();
     this.render();
     previousTexture?.dispose();
+  }
+
+  applyBrush(frame: BrushFrame, mode: BrushMode): void {
+    if (!this.sourceTexture) return;
+    this.brushPipeline.apply(frame, mode);
+    this.material.map = this.brushPipeline.texture;
+    this.render();
+  }
+
+  resetImage(): void {
+    if (!this.sourceTexture) return;
+    this.brushPipeline.reset();
+    this.material.map = this.brushPipeline.texture;
+    this.render();
   }
 
   resize(width: number, height: number, dpr: number): void {
@@ -68,7 +87,9 @@ export class CanvasRenderer {
   }
 
   dispose(): void {
-    this.texture?.dispose();
+    this.brushPipeline.dispose();
+    this.sourceTexture?.dispose();
+    this.sourceTexture = null;
     this.material.dispose();
     this.geometry.dispose();
     this.renderer.dispose();
