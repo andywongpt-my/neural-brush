@@ -14,7 +14,8 @@ export interface AIVisionAdapter {
 }
 
 export class NullAIVisionAdapter implements AIVisionAdapter {
-  async analyze(_image: ImageBitmap): Promise<SemanticMaskSet | null> {
+  async analyze(image: ImageBitmap): Promise<SemanticMaskSet | null> {
+    void image;
     return null;
   }
 }
