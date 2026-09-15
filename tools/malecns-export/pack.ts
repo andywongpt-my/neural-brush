@@ -1,4 +1,11 @@
 import {
+  mkdirSync,
+  readFileSync,
+  writeFileSync,
+} from 'node:fs';
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
+import {
   CIRCUIT_SCHEMA_VERSION,
   DATASET_ID,
   type CircuitManifest,
@@ -13,6 +20,8 @@ const MAGIC = 'NBC1';
 const HEADER_BYTES = 12;
 const EDGE_RECORD_BYTES = 12;
 const MAX_BROWSER_PAYLOAD_BYTES = 10 * 1024 * 1024;
+const DEFAULT_INPUT_PATH = resolve('tools/malecns-export/out/raw-circuit.json');
+const DEFAULT_OUTPUT_DIR = resolve('public/data/male-cns-v1');
 
 interface RawNeuron {
   bodyId: string;
@@ -222,4 +231,33 @@ export function buildAssetBundle(
   }
 
   return { metadataText, manifest, manifestText, binary };
+}
+
+export function runPacker(
+  inputPath: string,
+  outputDir: string,
+  generatedAt: string,
+): AssetBundle {
+  const rawText = readFileSync(inputPath, 'utf8');
+  const raw = JSON.parse(rawText) as RawCircuit;
+  const bundle = buildAssetBundle(raw, rawText, generatedAt);
+
+  mkdirSync(outputDir, { recursive: true });
+  writeFileSync(resolve(outputDir, 'circuit.bin'), bundle.binary);
+  writeFileSync(resolve(outputDir, 'metadata.json'), bundle.metadataText, 'utf8');
+  writeFileSync(resolve(outputDir, 'manifest.json'), bundle.manifestText, 'utf8');
+
+  return bundle;
+}
+
+const entryPath = process.argv[1];
+if (entryPath && pathToFileURL(resolve(entryPath)).href === import.meta.url) {
+  const bundle = runPacker(
+    DEFAULT_INPUT_PATH,
+    DEFAULT_OUTPUT_DIR,
+    new Date().toISOString(),
+  );
+  console.log(
+    `Packed ${bundle.manifest.neuronCount} neurons and ${bundle.manifest.edgeCount} edges to ${DEFAULT_OUTPUT_DIR}`,
+  );
 }
