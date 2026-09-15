@@ -1,21 +1,27 @@
 import { expect, test } from '@playwright/test';
 
-test('boots the Brain-first split workspace', async ({ page }) => {
+test('boots the Brain-first workspace with a live MaleCNS worker', async ({ page }) => {
   await page.goto('/');
 
   await expect(page.locator('#app')).toBeVisible();
   await expect(page.getByRole('region', { name: 'Brain' })).toBeVisible();
   await expect(page.getByRole('region', { name: 'Canvas' })).toBeVisible();
-  await expect(page.getByText('MaleCNS circuit: not loaded')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Run' })).toBeDisabled();
+  await expect(page.getByText('MaleCNS circuit: brain ready')).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByRole('button', { name: 'Pause' })).toBeEnabled();
+  await expect(page.getByTestId('brain-turn')).toBeVisible();
+  await expect(page.getByTestId('brain-forward')).toBeVisible();
+  await expect(page.getByTestId('brain-dwell')).toBeVisible();
+  await expect(page.getByTestId('brain-arousal')).toBeVisible();
 });
 
-test('loads a local image into the Three.js canvas', async ({ page }) => {
+test('loads a local image into the Three.js canvas while the brain remains ready', async ({ page }) => {
   await page.goto('/');
+  await expect(page.getByText('MaleCNS circuit: brain ready')).toBeVisible({ timeout: 10_000 });
   await page.getByLabel('Choose photo').setInputFiles('tests/fixtures/test-image.png');
 
   await expect(page.getByText('test-image.png')).toBeVisible();
   await expect(page.locator('canvas.photo-canvas')).toBeVisible();
+  await expect(page.getByText('MaleCNS circuit: brain ready')).toBeVisible();
 });
 
 test('keeps the previous valid image when a later file is rejected', async ({ page }) => {
