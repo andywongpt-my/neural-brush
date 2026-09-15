@@ -231,10 +231,17 @@ export function buildAssetBundle(
   return { metadataText, manifest, manifestText, binary };
 }
 
+export function resolveGeneratedAt(
+  explicit = process.env.NEURAL_BRUSH_GENERATED_AT,
+): string {
+  const value = explicit?.trim();
+  return value && value.length > 0 ? value : new Date().toISOString();
+}
+
 export function runPacker(
   inputPath = DEFAULT_INPUT_PATH,
   outputDir = DEFAULT_OUTPUT_DIR,
-  generatedAt = new Date().toISOString(),
+  generatedAt = resolveGeneratedAt(),
 ): AssetBundle {
   const rawText = readFileSync(inputPath, 'utf8');
   const raw = JSON.parse(rawText) as RawCircuit;
