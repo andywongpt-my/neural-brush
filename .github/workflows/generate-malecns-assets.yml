@@ -3,6 +3,7 @@ name: Generate MaleCNS Assets
 on:
   push:
     branches:
+      - main
       - feature/malecns-data-pipeline
     paths:
       - 'tools/malecns-export/export_bulk.py'
@@ -24,7 +25,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: feature/malecns-data-pipeline
+          ref: ${{ github.ref_name }}
 
       - uses: actions/setup-python@v5
         with:
@@ -96,6 +97,7 @@ jobs:
             .reduce((a, b) => a + b, 0);
           if (metadata.dataset !== 'male-cns:v1.0') throw new Error('Unexpected dataset');
           if (metadata.circuit !== 'dna-steering-v1') throw new Error('Unexpected circuit');
+          if (manifest.source !== 'male-cns-public-bulk:v1.0') throw new Error('Unexpected source provenance');
           if (metadata.behaviorPorts.turnLeft.length === 0 || metadata.behaviorPorts.turnRight.length === 0) {
             throw new Error('Both steering sides must be source-verified');
           }
@@ -122,7 +124,7 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git commit -m 'data: add verified MaleCNS v1 compact circuit assets'
-          git push origin HEAD:feature/malecns-data-pipeline
+          git push origin "HEAD:${GITHUB_REF_NAME}"
 
       - name: Upload auditable MaleCNS assets
         uses: actions/upload-artifact@v4
