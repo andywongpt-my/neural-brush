@@ -178,6 +178,22 @@ button:focus-visible,
   height: 100%;
 }
 
+.app-error-banner {
+  max-width: 680px;
+  margin: 48px auto;
+  padding: 20px;
+  color: #f7e7e7;
+  background: #251719;
+  border: 1px solid #6c343b;
+  border-radius: 14px;
+}
+
+.app-error-banner p {
+  margin: 8px 0 0;
+  color: #d9c1c4;
+  line-height: 1.5;
+}
+
 @media (max-width: 799px) {
   .split-view {
     grid-template-columns: minmax(0, 1fr);
@@ -195,5 +211,9 @@ button:focus-visible,
   .brain-graph-host,
   .three-canvas-host {
     min-height: 300px;
+  }
+
+  .app-error-banner {
+    margin: 20px 14px;
   }
 }

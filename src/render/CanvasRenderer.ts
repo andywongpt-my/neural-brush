@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { AppError } from '../app/AppError';
 
 export class CanvasRenderer {
   private readonly scene = new THREE.Scene();
@@ -17,10 +18,15 @@ export class CanvasRenderer {
     this.camera.position.z = 1;
     this.scene.add(this.plane);
 
-    this.renderer = new THREE.WebGLRenderer({
-      antialias: true,
-      preserveDrawingBuffer: false,
-    });
+    try {
+      this.renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        preserveDrawingBuffer: false,
+      });
+    } catch (cause) {
+      throw new AppError('WEBGL_UNAVAILABLE', cause);
+    }
+
     this.renderer.setClearColor(0x080b0d, 1);
     this.renderer.domElement.className = 'photo-canvas';
     this.renderer.domElement.setAttribute('aria-label', 'Photo canvas');

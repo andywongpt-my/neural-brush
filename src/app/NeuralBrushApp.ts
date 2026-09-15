@@ -1,6 +1,8 @@
+import { AppError } from './AppError';
 import { AppState } from './AppState';
 import { BrainPanel } from '../ui/BrainPanel';
 import { CanvasPanel } from '../ui/CanvasPanel';
+import { ErrorBanner } from '../ui/ErrorBanner';
 import { SplitView } from '../ui/SplitView';
 
 export class NeuralBrushApp {
@@ -11,16 +13,21 @@ export class NeuralBrushApp {
   constructor(private readonly host: HTMLElement) {}
 
   mount(): void {
-    const splitView = new SplitView({
-      initialRatio: this.state.getSnapshot().splitRatio,
-      onRatioChange: (ratio) => {
-        this.state.setSplitRatio(ratio);
-        splitView.setRatio(this.state.getSnapshot().splitRatio);
-      },
-    });
+    try {
+      const splitView = new SplitView({
+        initialRatio: this.state.getSnapshot().splitRatio,
+        onRatioChange: (ratio) => {
+          this.state.setSplitRatio(ratio);
+          splitView.setRatio(this.state.getSnapshot().splitRatio);
+        },
+      });
 
-    const { brainHost, canvasHost } = splitView.mount(this.host);
-    this.brainPanel.mount(brainHost);
-    this.canvasPanel.mount(canvasHost);
+      const { brainHost, canvasHost } = splitView.mount(this.host);
+      this.brainPanel.mount(brainHost);
+      this.canvasPanel.mount(canvasHost);
+    } catch (cause) {
+      const appError = cause instanceof AppError ? cause : new AppError('APP_INIT', cause);
+      new ErrorBanner(this.host).show(appError);
+    }
   }
 }

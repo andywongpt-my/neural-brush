@@ -1,3 +1,4 @@
+import { AppError } from '../app/AppError';
 import { AppState } from '../app/AppState';
 import { ImageLoader } from '../image/ImageLoader';
 import { CanvasRenderer } from '../render/CanvasRenderer';
@@ -92,7 +93,8 @@ export class CanvasPanel {
       error.hidden = true;
       error.textContent = '';
     } catch (cause) {
-      error.textContent = cause instanceof Error ? cause.message : 'Could not decode image';
+      const appError = cause instanceof AppError ? cause : new AppError('IMAGE_DECODE', cause);
+      error.textContent = appError.message;
       error.hidden = false;
     }
   }
