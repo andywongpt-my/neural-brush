@@ -45,6 +45,6 @@
   "behaviorPorts": {
     "turnLeft": ["200"],
     "turnRight": ["300"],
-    "forward": ["200", "300"]
+    "forward": []
   }
 }
