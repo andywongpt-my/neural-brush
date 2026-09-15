@@ -18,6 +18,10 @@ function validateMetadata(metadata: CircuitMetadata): void {
   }
 }
 
+function normalizeBaseUrl(baseUrl: string): string {
+  return baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+}
+
 export class CircuitLoader {
   static decode(metadata: CircuitMetadata, binary: ArrayBuffer): CircuitGraph {
     validateMetadata(metadata);
@@ -82,5 +86,27 @@ export class CircuitLoader {
     }
 
     return new CircuitGraph(metadata, edges);
+  }
+
+  static async load(baseUrl = './data/male-cns-v1/'): Promise<CircuitGraph> {
+    const base = normalizeBaseUrl(baseUrl);
+    const metadataResponse = await fetch(`${base}metadata.json`);
+    if (!metadataResponse.ok) {
+      throw new Error(
+        `Failed to load metadata.json (HTTP ${metadataResponse.status})`,
+      );
+    }
+
+    const metadata = (await metadataResponse.json()) as CircuitMetadata;
+    validateMetadata(metadata);
+
+    const binaryResponse = await fetch(`${base}circuit.bin`);
+    if (!binaryResponse.ok) {
+      throw new Error(
+        `Failed to load circuit.bin (HTTP ${binaryResponse.status})`,
+      );
+    }
+
+    return CircuitLoader.decode(metadata, await binaryResponse.arrayBuffer());
   }
 }
