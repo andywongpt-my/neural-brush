@@ -1,7 +1,9 @@
 import { AppError } from '../app/AppError';
 import { AppState } from '../app/AppState';
+import type { BrushFrame, BrushMode } from '../brush/BrushTypes';
 import { ImageLoader } from '../image/ImageLoader';
 import { CanvasRenderer } from '../render/CanvasRenderer';
+import type { ImageDataLike } from '../vision/EditedImageSampler';
 
 const MAX_VISION_DIMENSION = 512;
 
@@ -42,6 +44,7 @@ export class CanvasPanel {
   constructor(
     private readonly state: AppState,
     private readonly onVisionFrame?: (frame: VisionFrame | null) => void,
+    private readonly onImageChanged?: () => void,
   ) {}
 
   mount(host: HTMLElement): void {
@@ -116,6 +119,22 @@ export class CanvasPanel {
     });
   }
 
+  applyBrush(frame: BrushFrame, mode: BrushMode): void {
+    this.renderer?.applyBrush(frame, mode);
+  }
+
+  readEditedPatch(
+    xNorm: number,
+    yNorm: number,
+    radiusPx: number,
+  ): ImageDataLike | null {
+    return this.renderer?.readEditedPatch(xNorm, yNorm, radiusPx) ?? null;
+  }
+
+  resetImage(): void {
+    this.renderer?.resetImage();
+  }
+
   dispose(): void {
     this.resizeObserver?.disconnect();
     this.resizeObserver = null;
@@ -136,6 +155,7 @@ export class CanvasPanel {
       imageName.textContent = file.name;
       error.hidden = true;
       error.textContent = '';
+      this.onImageChanged?.();
 
       if (this.onVisionFrame) {
         try {
