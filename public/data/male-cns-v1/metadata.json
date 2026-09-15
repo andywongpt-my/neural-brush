@@ -1,0 +1,1377 @@
+{
+  "schema": 1,
+  "dataset": "male-cns:v1.0",
+  "circuit": "dna-steering-v1",
+  "neurons": [
+    {
+      "bodyId": "10005",
+      "type": "AOTU019",
+      "instance": "AOTU019_R",
+      "somaSide": "R",
+      "neurotransmitter": "gaba",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "10070",
+      "type": "AOTU019",
+      "instance": "AOTU019_L",
+      "somaSide": "L",
+      "neurotransmitter": "gaba",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "10116",
+      "type": "VES074",
+      "instance": "VES074_L",
+      "somaSide": "L",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "10127",
+      "type": "VES064",
+      "instance": "VES064_L",
+      "somaSide": "L",
+      "neurotransmitter": "glutamate",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "10136",
+      "type": "PS304",
+      "instance": "PS304_L",
+      "somaSide": "L",
+      "neurotransmitter": "gaba",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "10148",
+      "type": "AOTU041",
+      "instance": "AOTU041_L",
+      "somaSide": "L",
+      "neurotransmitter": "gaba",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "10180",
+      "type": "AN02A002",
+      "instance": "AN02A002_R",
+      "somaSide": "R",
+      "neurotransmitter": "glutamate",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "10210",
+      "type": "LAL074",
+      "instance": "LAL074_R",
+      "somaSide": "R",
+      "neurotransmitter": "glutamate",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "10243",
+      "type": "VES104",
+      "instance": "VES104_L",
+      "somaSide": "L",
+      "neurotransmitter": "gaba",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "10360",
+      "type": "DNa02",
+      "instance": "DNa02_R",
+      "somaSide": "R",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": true
+    },
+    {
+      "bodyId": "10373",
+      "type": "PVLP141",
+      "instance": "PVLP141_L",
+      "somaSide": "L",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "10442",
+      "type": "DNa01",
+      "instance": "DNa01(VES006)_L",
+      "somaSide": "L",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": true
+    },
+    {
+      "bodyId": "10483",
+      "type": "PVLP138",
+      "instance": "PVLP138_L",
+      "somaSide": "L",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "10502",
+      "type": "AOTU041",
+      "instance": "AOTU041_L",
+      "somaSide": "L",
+      "neurotransmitter": "gaba",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "10517",
+      "type": "LAL124",
+      "instance": "LAL124_R",
+      "somaSide": "R",
+      "neurotransmitter": "glutamate",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "10671",
+      "type": "AN02A002",
+      "instance": "AN02A002_L",
+      "somaSide": "L",
+      "neurotransmitter": "glutamate",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "10760",
+      "type": "DNa01",
+      "instance": "DNa01(VES006)_R",
+      "somaSide": "R",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": true
+    },
+    {
+      "bodyId": "10806",
+      "type": "GNG494",
+      "instance": "GNG494_R",
+      "somaSide": "R",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "10872",
+      "type": "CB0677",
+      "instance": "CB0677_L",
+      "somaSide": "L",
+      "neurotransmitter": "gaba",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "10919",
+      "type": "VES064",
+      "instance": "VES064_R",
+      "somaSide": "R",
+      "neurotransmitter": "glutamate",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "10971",
+      "type": "DNa11",
+      "instance": "DNa11(VES008)_L",
+      "somaSide": "L",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "10975",
+      "type": "DNa03",
+      "instance": "DNa03_R",
+      "somaSide": "R",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "11054",
+      "type": "LAL015",
+      "instance": "LAL015_L",
+      "somaSide": "L",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "11142",
+      "type": "PS059",
+      "instance": "PS059_R",
+      "somaSide": "R",
+      "neurotransmitter": "gaba",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "11233",
+      "type": "DNa11",
+      "instance": "DNa11(VES008)_R",
+      "somaSide": "R",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "11277",
+      "type": "LoVP90c",
+      "instance": "LoVP90c_L",
+      "somaSide": "L",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "11306",
+      "type": "PS013",
+      "instance": "PS013_L",
+      "somaSide": "L",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "11371",
+      "type": "PS013",
+      "instance": "PS013_R",
+      "somaSide": "R",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "11441",
+      "type": "PS322",
+      "instance": "PS322_L",
+      "somaSide": "L",
+      "neurotransmitter": "glutamate",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "11472",
+      "type": "PVLP015",
+      "instance": "PVLP015_L",
+      "somaSide": "L",
+      "neurotransmitter": "glutamate",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "11495",
+      "type": "PS059",
+      "instance": "PS059_R",
+      "somaSide": "R",
+      "neurotransmitter": "gaba",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "11610",
+      "type": "DNae007",
+      "instance": "DNae007(VES009)_R",
+      "somaSide": "R",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "11622",
+      "type": "CB0297",
+      "instance": "CB0297_R",
+      "somaSide": "R",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "11625",
+      "type": "DNae005",
+      "instance": "DNae005(VES009)_R",
+      "somaSide": "R",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "11670",
+      "type": "LT51",
+      "instance": "LT51_R",
+      "somaSide": "R",
+      "neurotransmitter": "glutamate",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "11717",
+      "type": "PS305",
+      "instance": "PS305_L",
+      "somaSide": "L",
+      "neurotransmitter": "glutamate",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "11726",
+      "type": "LT51",
+      "instance": "LT51_L",
+      "somaSide": "L",
+      "neurotransmitter": "glutamate",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "11798",
+      "type": "PVLP138",
+      "instance": "PVLP138_R",
+      "somaSide": "R",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "11820",
+      "type": "DNge123",
+      "instance": "DNge123_L",
+      "somaSide": "L",
+      "neurotransmitter": "glutamate",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "11863",
+      "type": "GNG553",
+      "instance": "GNG553_R",
+      "somaSide": "R",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "11961",
+      "type": "DNp57",
+      "instance": "DNp57(PS195)_L",
+      "somaSide": "L",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "12094",
+      "type": "LoVP90c",
+      "instance": "LoVP90c_R",
+      "somaSide": "R",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "12187",
+      "type": "VES074",
+      "instance": "VES074_R",
+      "somaSide": "R",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "12232",
+      "type": "GNG515",
+      "instance": "GNG515_R",
+      "somaSide": "R",
+      "neurotransmitter": "gaba",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "12705",
+      "type": "DNge123",
+      "instance": "DNge123_R",
+      "somaSide": "R",
+      "neurotransmitter": "glutamate",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "12724",
+      "type": "LAL014",
+      "instance": "LAL014_R",
+      "somaSide": "R",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "12910",
+      "type": "LAL051",
+      "instance": "LAL051_R",
+      "somaSide": "R",
+      "neurotransmitter": "glutamate",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "12954",
+      "type": "LAL172",
+      "instance": "LAL172_R",
+      "somaSide": "R",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "12990",
+      "type": "CL322",
+      "instance": "CL322_R",
+      "somaSide": "R",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "12993",
+      "type": "SAD036",
+      "instance": "SAD036_R",
+      "somaSide": "R",
+      "neurotransmitter": "glutamate",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "13004",
+      "type": "GNG316",
+      "instance": "GNG316_L",
+      "somaSide": "L",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "13137",
+      "type": "AN03A008",
+      "instance": "AN03A008_R",
+      "somaSide": "R",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "13201",
+      "type": "LAL015",
+      "instance": "LAL015_R",
+      "somaSide": "R",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "13345",
+      "type": "CB0316",
+      "instance": "CB0316_R",
+      "somaSide": "R",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "13357",
+      "type": "VES085_a",
+      "instance": "VES085_a_L",
+      "somaSide": "L",
+      "neurotransmitter": "gaba",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "13534",
+      "type": "LC33",
+      "instance": "LC33_L",
+      "somaSide": "L",
+      "neurotransmitter": "glutamate",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "13538",
+      "type": "AN03A008",
+      "instance": "AN03A008_L",
+      "somaSide": "L",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "13692",
+      "type": "LAL121",
+      "instance": "LAL121_L",
+      "somaSide": "L",
+      "neurotransmitter": "glutamate",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "13750",
+      "type": "AVLP749m",
+      "instance": "AVLP749m_R",
+      "somaSide": "R",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "13755",
+      "type": "AVLP749m",
+      "instance": "AVLP749m_L",
+      "somaSide": "L",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "13966",
+      "type": "AVLP749m",
+      "instance": "AVLP749m_R",
+      "somaSide": "R",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "14002",
+      "type": "LC33",
+      "instance": "LC33_R",
+      "somaSide": "R",
+      "neurotransmitter": "glutamate",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "14123",
+      "type": "VES072",
+      "instance": "VES072_L",
+      "somaSide": "L",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "14156",
+      "type": "GNG523",
+      "instance": "GNG523_L",
+      "somaSide": "L",
+      "neurotransmitter": "glutamate",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "14191",
+      "type": "VES072",
+      "instance": "VES072_R",
+      "somaSide": "R",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "14192",
+      "type": "LAL051",
+      "instance": "LAL051_L",
+      "somaSide": "L",
+      "neurotransmitter": "glutamate",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "14208",
+      "type": "GNG565",
+      "instance": "GNG565_R",
+      "somaSide": "R",
+      "neurotransmitter": "gaba",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "14259",
+      "type": "LAL046",
+      "instance": "LAL046_R",
+      "somaSide": "R",
+      "neurotransmitter": "gaba",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "14411",
+      "type": "AOTU009",
+      "instance": "AOTU009_R",
+      "somaSide": "R",
+      "neurotransmitter": "glutamate",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "14674",
+      "type": "LAL013",
+      "instance": "LAL013_R",
+      "somaSide": "R",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "14766",
+      "type": "SAD085",
+      "instance": "SAD085_L",
+      "somaSide": "L",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "14774",
+      "type": "LT51",
+      "instance": "LT51_L",
+      "somaSide": "L",
+      "neurotransmitter": "glutamate",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "14784",
+      "type": "CB0431",
+      "instance": "CB0431_R",
+      "somaSide": "R",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "14830",
+      "type": "LAL171",
+      "instance": "LAL171_L",
+      "somaSide": "L",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "14986",
+      "type": "LAL010",
+      "instance": "LAL010_L",
+      "somaSide": "L",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "15078",
+      "type": "PS183",
+      "instance": "PS183_R",
+      "somaSide": "R",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "15246",
+      "type": "CB4105",
+      "instance": "CB4105_R",
+      "somaSide": "R",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "15449",
+      "type": "CL175",
+      "instance": "CL175_R",
+      "somaSide": "R",
+      "neurotransmitter": "glutamate",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "15957",
+      "type": "GNG521",
+      "instance": "GNG521_R",
+      "somaSide": "R",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "15982",
+      "type": "GNG470",
+      "instance": "GNG470_R",
+      "somaSide": "R",
+      "neurotransmitter": "gaba",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "16274",
+      "type": "LAL112",
+      "instance": "LAL112_L",
+      "somaSide": "L",
+      "neurotransmitter": "gaba",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "16327",
+      "type": "GNG521",
+      "instance": "GNG521_L",
+      "somaSide": "L",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "16571",
+      "type": "LAL054",
+      "instance": "LAL054_R",
+      "somaSide": "R",
+      "neurotransmitter": "glutamate",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "16586",
+      "type": "PS201",
+      "instance": "PS201_L",
+      "somaSide": "L",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "16642",
+      "type": "LAL122",
+      "instance": "LAL122_R",
+      "somaSide": "R",
+      "neurotransmitter": "glutamate",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "16754",
+      "type": "PS305",
+      "instance": "PS305_R",
+      "somaSide": "R",
+      "neurotransmitter": "glutamate",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "16843",
+      "type": "GNG569",
+      "instance": "GNG569_R",
+      "somaSide": "R",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "16862",
+      "type": "LAL112",
+      "instance": "LAL112_R",
+      "somaSide": "R",
+      "neurotransmitter": "gaba",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "16944",
+      "type": "GNG212",
+      "instance": "GNG212_R",
+      "somaSide": "R",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "17097",
+      "type": "AN06B007",
+      "instance": "AN06B007_R",
+      "somaSide": "R",
+      "neurotransmitter": "gaba",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "17912",
+      "type": "GNG212",
+      "instance": "GNG212_L",
+      "somaSide": "L",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "18338",
+      "type": "AN09B003",
+      "instance": "AN09B003(18338)_R",
+      "somaSide": "R",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "18956",
+      "type": "LAL171",
+      "instance": "LAL171_R",
+      "somaSide": "R",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "22185",
+      "type": "LAL122",
+      "instance": "LAL122_L",
+      "somaSide": "L",
+      "neurotransmitter": "glutamate",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "22518",
+      "type": "AN09B060",
+      "instance": "AN09B060(22518)_R",
+      "somaSide": "R",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "23721",
+      "type": "CB4105",
+      "instance": "CB4105_L",
+      "somaSide": "L",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "24396",
+      "type": "SIP022",
+      "instance": "SIP022_R",
+      "somaSide": "R",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "29860",
+      "type": "PS049",
+      "instance": "PS049_R",
+      "somaSide": "R",
+      "neurotransmitter": "gaba",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "30837",
+      "type": "AN03B094",
+      "instance": "AN03B094_L",
+      "somaSide": "L",
+      "neurotransmitter": "gaba",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "31330",
+      "type": "PS049",
+      "instance": "PS049_L",
+      "somaSide": "L",
+      "neurotransmitter": "gaba",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "33289",
+      "type": "LAL074",
+      "instance": "LAL074_L",
+      "somaSide": "L",
+      "neurotransmitter": "glutamate",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "38847",
+      "type": "LAL046",
+      "instance": "LAL046_L",
+      "somaSide": "L",
+      "neurotransmitter": "gaba",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "45127",
+      "type": "GNG565",
+      "instance": "GNG565_L",
+      "somaSide": "L",
+      "neurotransmitter": "gaba",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "47107",
+      "type": "SAD085",
+      "instance": "SAD085_R",
+      "somaSide": "R",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "57832",
+      "type": "CB0431",
+      "instance": "CB0431_L",
+      "somaSide": "L",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "173968",
+      "type": "SIP022",
+      "instance": "SIP022_L",
+      "somaSide": "L",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "511776",
+      "type": "LAL084",
+      "instance": "LAL084_R",
+      "somaSide": "R",
+      "neurotransmitter": "glutamate",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "512258",
+      "type": "LAL013",
+      "instance": "LAL013_L",
+      "somaSide": "L",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "512468",
+      "type": "AN06B007",
+      "instance": "AN06B007_L",
+      "somaSide": "L",
+      "neurotransmitter": "gaba",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "512985",
+      "type": "GNG569",
+      "instance": "GNG569_L",
+      "somaSide": "L",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "513160",
+      "type": "PS186",
+      "instance": "PS186_R",
+      "somaSide": "R",
+      "neurotransmitter": "glutamate",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "513163",
+      "type": "VES007",
+      "instance": "VES007_R",
+      "somaSide": "R",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "514310",
+      "type": "CB0297",
+      "instance": "CB0297_L",
+      "somaSide": "L",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "514660",
+      "type": "AN09B003",
+      "instance": "AN09B003(18338)_L",
+      "somaSide": "L",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "514764",
+      "type": "PVLP141",
+      "instance": "PVLP141_R",
+      "somaSide": "R",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "514988",
+      "type": "PS059",
+      "instance": "PS059_L",
+      "somaSide": "L",
+      "neurotransmitter": "gaba",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "515217",
+      "type": "CL175",
+      "instance": "CL175_L",
+      "somaSide": "L",
+      "neurotransmitter": "glutamate",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "515757",
+      "type": "SAD036",
+      "instance": "SAD036_L",
+      "somaSide": "L",
+      "neurotransmitter": "glutamate",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "516361",
+      "type": "AOTU025",
+      "instance": "AOTU025_L",
+      "somaSide": "L",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "516502",
+      "type": "PS183",
+      "instance": "PS183_L",
+      "somaSide": "L",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "517236",
+      "type": "GNG567",
+      "instance": "GNG567_R",
+      "somaSide": "R",
+      "neurotransmitter": "gaba",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "519228",
+      "type": "DNae005",
+      "instance": "DNae005(VES009)_L",
+      "somaSide": "L",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "519399",
+      "type": "PS059",
+      "instance": "PS059_L",
+      "somaSide": "L",
+      "neurotransmitter": "gaba",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "519461",
+      "type": "LAL018",
+      "instance": "LAL018_L",
+      "somaSide": "L",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "519517",
+      "type": "AVLP749m",
+      "instance": "AVLP749m_L",
+      "somaSide": "L",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "519624",
+      "type": "DNa03",
+      "instance": "DNa03_L",
+      "somaSide": "L",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "519705",
+      "type": "VES104",
+      "instance": "VES104_R",
+      "somaSide": "R",
+      "neurotransmitter": "gaba",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "519724",
+      "type": "LAL014",
+      "instance": "LAL014_L",
+      "somaSide": "L",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "519865",
+      "type": "LAL112",
+      "instance": "LAL112_L",
+      "somaSide": "L",
+      "neurotransmitter": "gaba",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "519877",
+      "type": "VES007",
+      "instance": "VES007_L",
+      "somaSide": "L",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "519926",
+      "type": "AOTU025",
+      "instance": "AOTU025_R",
+      "somaSide": "R",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "519944",
+      "type": "LAL124",
+      "instance": "LAL124_L",
+      "somaSide": "L",
+      "neurotransmitter": "glutamate",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "520194",
+      "type": "PS304",
+      "instance": "PS304_R",
+      "somaSide": "R",
+      "neurotransmitter": "gaba",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "521190",
+      "type": "DNae007",
+      "instance": "DNae007(VES009)_L",
+      "somaSide": "L",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "521217",
+      "type": "AVLP749m",
+      "instance": "AVLP749m_L",
+      "somaSide": "L",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "521219",
+      "type": "CB0316",
+      "instance": "CB0316_L",
+      "somaSide": "L",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "521525",
+      "type": "LAL126",
+      "instance": "LAL126_R",
+      "somaSide": "R",
+      "neurotransmitter": "glutamate",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "521529",
+      "type": "LAL084",
+      "instance": "LAL084_L",
+      "somaSide": "L",
+      "neurotransmitter": "glutamate",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "523769",
+      "type": "DNa02",
+      "instance": "DNa02_L",
+      "somaSide": "L",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": true
+    },
+    {
+      "bodyId": "523772",
+      "type": "LAL016",
+      "instance": "LAL016_L",
+      "somaSide": "L",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "524000",
+      "type": "LAL054",
+      "instance": "LAL054_L",
+      "somaSide": "L",
+      "neurotransmitter": "glutamate",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "524159",
+      "type": "PS011",
+      "instance": "PS011_L",
+      "somaSide": "L",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "525266",
+      "type": "AOTU009",
+      "instance": "AOTU009_L",
+      "somaSide": "L",
+      "neurotransmitter": "glutamate",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "529489",
+      "type": "LAL121",
+      "instance": "LAL121_R",
+      "somaSide": "R",
+      "neurotransmitter": "glutamate",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "529570",
+      "type": "VES085_b",
+      "instance": "VES085_b_L",
+      "somaSide": "L",
+      "neurotransmitter": "gaba",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "529641",
+      "type": "LAL018",
+      "instance": "LAL018_R",
+      "somaSide": "R",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "530155",
+      "type": "PS322",
+      "instance": "PS322(hb5813078223)_R",
+      "somaSide": "R",
+      "neurotransmitter": "glutamate",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "531861",
+      "type": "PS186",
+      "instance": "PS186_L",
+      "somaSide": "L",
+      "neurotransmitter": "glutamate",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "531863",
+      "type": "AOTU012",
+      "instance": "AOTU012_L",
+      "somaSide": "L",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "532944",
+      "type": "GNG553",
+      "instance": "GNG553_L",
+      "somaSide": "L",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "555384",
+      "type": "AVLP280",
+      "instance": "AVLP280_L",
+      "somaSide": "L",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": false
+    }
+  ],
+  "behaviorPorts": {
+    "turnLeft": [
+      "10442",
+      "523769"
+    ],
+    "turnRight": [
+      "10360",
+      "10760"
+    ],
+    "forward": []
+  }
+}
