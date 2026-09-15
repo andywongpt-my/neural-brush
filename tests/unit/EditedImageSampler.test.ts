@@ -1,7 +1,9 @@
+import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import {
   calculateReadbackRect,
   flipReadbackRows,
+  readEditedPatch,
 } from '../../src/vision/EditedImageSampler';
 
 describe('calculateReadbackRect', () => {
@@ -54,5 +56,42 @@ describe('flipReadbackRows', () => {
       0, 0, 255, 255, 255, 255, 255, 255,
       255, 0, 0, 255, 0, 255, 0, 255,
     ]);
+  });
+});
+
+describe('readEditedPatch', () => {
+  it('reads the edited target rectangle and returns top-left RGBA order', () => {
+    const calls: number[][] = [];
+    const reader = {
+      readRenderTargetPixels(
+        _target: THREE.WebGLRenderTarget,
+        x: number,
+        y: number,
+        width: number,
+        height: number,
+        buffer: Uint8Array,
+      ) {
+        calls.push([x, y, width, height]);
+        for (let row = 0; row < height; row += 1) {
+          for (let col = 0; col < width; col += 1) {
+            const offset = (row * width + col) * 4;
+            buffer[offset] = row * 50;
+            buffer[offset + 1] = col * 50;
+            buffer[offset + 2] = 0;
+            buffer[offset + 3] = 255;
+          }
+        }
+      },
+    };
+    const target = new THREE.WebGLRenderTarget(4, 4);
+
+    const patch = readEditedPatch(reader, target, 4, 4, 0, 0, 1);
+
+    expect(calls).toEqual([[0, 1, 3, 3]]);
+    expect(patch.width).toBe(3);
+    expect(patch.height).toBe(3);
+    expect([...patch.data.slice(0, 4)]).toEqual([100, 0, 0, 255]);
+    expect([...patch.data.slice(-4)]).toEqual([0, 100, 0, 255]);
+    target.dispose();
   });
 });
