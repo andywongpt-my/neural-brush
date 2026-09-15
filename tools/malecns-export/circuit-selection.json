@@ -1,0 +1,8 @@
+{
+  "dataset": "male-cns:v1.0",
+  "circuit": "dna-steering-v1",
+  "seedTypes": ["DNa01", "DNa02"],
+  "firstHop": { "partners": "inputs", "threshold": 5, "maxPartners": 64 },
+  "secondHop": { "partners": "inputs", "threshold": 10, "maxPartners": 96 },
+  "internalEdgeThreshold": 1
+}
