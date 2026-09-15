@@ -19,6 +19,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: malecns-assets-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   generate:
     runs-on: ubuntu-latest
@@ -77,6 +81,10 @@ jobs:
 
       - run: npm ci
 
+      - name: Set deterministic generation timestamp
+        shell: bash
+        run: echo "NEURAL_BRUSH_GENERATED_AT=$(git show -s --format=%cI HEAD)" >> "$GITHUB_ENV"
+
       - name: Pack compact browser assets
         run: npm run data:pack
 
@@ -124,6 +132,8 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git commit -m 'data: add verified MaleCNS v1 compact circuit assets'
+          git fetch origin "$GITHUB_REF_NAME"
+          git rebase "origin/$GITHUB_REF_NAME"
           git push origin "HEAD:${GITHUB_REF_NAME}"
 
       - name: Upload auditable MaleCNS assets
