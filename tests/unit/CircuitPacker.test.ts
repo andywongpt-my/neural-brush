@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildAssetBundle,
   packCircuit,
+  resolveGeneratedAt,
   runPacker,
   type RawCircuit,
 } from '../../tools/malecns-export/pack';
@@ -97,6 +98,14 @@ describe('buildAssetBundle', () => {
     expect(() =>
       buildAssetBundle(raw, rawText, '2026-09-15T00:00:00.000Z'),
     ).toThrow('10 MiB');
+  });
+});
+
+describe('generation timestamp', () => {
+  it('uses an explicit workflow timestamp for reproducible retries', () => {
+    expect(resolveGeneratedAt('2026-09-15T11:18:03+00:00')).toBe(
+      '2026-09-15T11:18:03+00:00',
+    );
   });
 });
 
