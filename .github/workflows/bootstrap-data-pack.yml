@@ -1,0 +1,34 @@
+name: Bootstrap data pack dependency
+
+on:
+  push:
+    branches:
+      - feature/malecns-data-pipeline
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  lockfile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/malecns-data-pipeline
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm install --save-dev tsx
+      - run: npm pkg set 'scripts.data:pack=tsx tools/malecns-export/pack.ts'
+      - name: Commit package metadata
+        run: |
+          git add package.json package-lock.json
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore: add data pack CLI dependency"
+          git push origin HEAD:feature/malecns-data-pipeline
