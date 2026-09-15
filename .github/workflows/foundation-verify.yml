@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   verify:
@@ -20,8 +20,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
       - name: Install dependencies
-        run: npm install
+        run: npm ci
       - name: Run unit smoke test
         run: npm test -- --run tests/unit/smoke.test.ts
       - name: Typecheck
@@ -34,14 +35,3 @@ jobs:
         run: npx playwright install chromium
       - name: Run E2E smoke test
         run: npm run test:e2e
-      - name: Commit generated package lock
-        if: success() && github.event_name == 'push'
-        run: |
-          git add package-lock.json
-          if git diff --cached --quiet; then
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "chore: add npm lockfile"
-          git push origin HEAD:${GITHUB_REF_NAME}
