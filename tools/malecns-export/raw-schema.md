@@ -8,7 +8,7 @@ The selected graph preserves source neuron identity, directed connectivity, sour
 
 The selected frontier/input-port neurons are graph-boundary nodes, **not automatically retinal or visual neurons**. Neural Brush later injects local photo-derived signals through a synthetic sensory-adapter layer. That adapter is application modeling logic and must not be presented as a native MaleCNS sensory pathway.
 
-Likewise, DNa01/DNa02 are used as descending steering seeds. `turnLeft`, `turnRight`, and aggregate `forward` are application behavior readouts built from verified seed metadata; they are not claims that the connectome contains artistic brush outputs.
+DNa01/DNa02 are used as descending steering seeds. Source `somaSide` metadata is used to populate `turnLeft` and `turnRight`; the exporter fails rather than guessing if both sides cannot be verified. V1 leaves `forward` empty because this circuit does not treat DNa01/DNa02 as a verified forward-speed command. A future forward-drive port requires separate biological evidence.
 
 ## Raw JSON
 
@@ -19,7 +19,7 @@ The raw JSON object contains:
 - `selection`: the exact deterministic selection configuration used to produce the snapshot.
 - `neurons[]`: source neurons with decimal-string `bodyId`, nullable `type`, `instance`, `somaSide`, and neurotransmitter fields plus derived boolean role flags.
 - `edges[]`: directed internal edges with decimal-string `source` and `target` body IDs and positive integer source `weight`.
-- `behaviorPorts`: verified left/right/forward seed body-ID arrays.
+- `behaviorPorts`: verified steering body-ID arrays (`turnLeft`, `turnRight`) plus an empty `forward` array in V1.
 
 Body IDs are serialized as decimal strings to avoid accidental precision loss across tools. Edge ordering and neuron ordering are deterministic so identical upstream data and selection configuration can be hashed and packed reproducibly.
 
