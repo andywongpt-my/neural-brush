@@ -1,4 +1,5 @@
 export const DATASET_ID = 'male-cns:v1.0' as const;
+export const SOURCE_ID = 'male-cns-public-bulk:v1.0' as const;
 export const CIRCUIT_SCHEMA_VERSION = 1 as const;
 
 export type SomaSide = 'L' | 'R' | 'M' | 'unknown';
@@ -32,7 +33,7 @@ export interface CircuitManifest {
   dataset: 'male-cns:v1.0';
   circuit: 'dna-steering-v1';
   generatedAt: string;
-  source: 'neuprint.janelia.org';
+  source: 'male-cns-public-bulk:v1.0';
   seedSelectors: ['DNa01', 'DNa02'];
   neuronCount: number;
   edgeCount: number;
