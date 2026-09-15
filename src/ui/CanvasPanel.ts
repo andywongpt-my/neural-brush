@@ -1,49 +1,31 @@
 import { AppError } from '../app/AppError';
 import { AppState } from '../app/AppState';
 import type { BrushFrame, BrushMode } from '../brush/BrushTypes';
+import { FlyPointerInteraction } from '../fly/FlyPointerInteraction';
+import type { FlyState } from '../fly/FlyTypes';
 import { ImageLoader } from '../image/ImageLoader';
 import { CanvasRenderer } from '../render/CanvasRenderer';
 import type { ImageDataLike } from '../vision/EditedImageSampler';
 
-const MAX_VISION_DIMENSION = 512;
-
-export interface VisionFrame {
-  pixels: Uint8ClampedArray;
-  width: number;
-  height: number;
-}
-
-function extractVisionFrame(bitmap: ImageBitmap): VisionFrame {
-  const scale = Math.min(
-    1,
-    MAX_VISION_DIMENSION / Math.max(bitmap.width, bitmap.height),
-  );
-  const width = Math.max(1, Math.round(bitmap.width * scale));
-  const height = Math.max(1, Math.round(bitmap.height * scale));
-  const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
-  const context = canvas.getContext('2d', { willReadFrequently: true });
-  if (!context) {
-    throw new Error('2D canvas is unavailable for local visual sampling');
-  }
-  context.drawImage(bitmap, 0, 0, width, height);
-  const imageData = context.getImageData(0, 0, width, height);
-  return {
-    pixels: imageData.data.slice(),
-    width,
-    height,
-  };
+export interface CanvasFlyControls {
+  getFlyState(): FlyState;
+  onDragStart(x: number, y: number): void;
+  onDrag(x: number, y: number): void;
+  onDragEnd(): void;
+  onFollowTarget(x: number, y: number): void;
+  onAutonomous(): void;
 }
 
 export class CanvasPanel {
   private renderer: CanvasRenderer | null = null;
   private resizeObserver: ResizeObserver | null = null;
   private bitmap: ImageBitmap | null = null;
+  private pointerInteraction: FlyPointerInteraction | null = null;
+  private pointerCleanup: (() => void) | null = null;
 
   constructor(
     private readonly state: AppState,
-    private readonly onVisionFrame?: (frame: VisionFrame | null) => void,
+    private readonly flyControls?: CanvasFlyControls,
     private readonly onImageChanged?: () => void,
   ) {}
 
@@ -57,7 +39,14 @@ export class CanvasPanel {
     const subtitle = document.createElement('p');
     subtitle.textContent = 'Live photo workspace';
     identity.append(title, subtitle);
-    header.append(identity);
+
+    const autonomousButton = document.createElement('button');
+    autonomousButton.type = 'button';
+    autonomousButton.textContent = 'Autonomous';
+    autonomousButton.dataset.testid = 'fly-autonomous';
+    autonomousButton.addEventListener('click', () => this.flyControls?.onAutonomous());
+
+    header.append(identity, autonomousButton);
 
     const uploadHost = document.createElement('div');
     uploadHost.className = 'upload-drop-zone';
@@ -95,6 +84,7 @@ export class CanvasPanel {
 
     this.renderer?.dispose();
     this.resizeObserver?.disconnect();
+    this.pointerCleanup?.();
     this.renderer = new CanvasRenderer(threeHost);
     this.resizeObserver = new ResizeObserver(([entry]) => {
       if (!entry || !this.renderer) return;
@@ -102,6 +92,7 @@ export class CanvasPanel {
       this.renderer.resize(width, height, window.devicePixelRatio);
     });
     this.resizeObserver.observe(threeHost);
+    this.bindPointerControls();
 
     input.addEventListener('change', () => {
       const file = input.files?.[0];
@@ -123,6 +114,10 @@ export class CanvasPanel {
     this.renderer?.applyBrush(frame, mode);
   }
 
+  updateFly(state: FlyState): void {
+    this.renderer?.updateFly(state);
+  }
+
   readEditedPatch(
     xNorm: number,
     yNorm: number,
@@ -136,13 +131,75 @@ export class CanvasPanel {
   }
 
   dispose(): void {
+    this.pointerCleanup?.();
+    this.pointerCleanup = null;
+    this.pointerInteraction = null;
     this.resizeObserver?.disconnect();
     this.resizeObserver = null;
     this.renderer?.dispose();
     this.renderer = null;
     this.bitmap?.close();
     this.bitmap = null;
-    this.onVisionFrame?.(null);
+  }
+
+  private bindPointerControls(): void {
+    if (!this.renderer || !this.flyControls) return;
+    const canvas = this.renderer.canvasElement;
+    canvas.style.touchAction = 'none';
+
+    const interaction = new FlyPointerInteraction({
+      onDragStart: this.flyControls.onDragStart,
+      onDrag: this.flyControls.onDrag,
+      onDragEnd: this.flyControls.onDragEnd,
+      onFollowTarget: this.flyControls.onFollowTarget,
+    });
+    this.pointerInteraction = interaction;
+    let activePointerId: number | null = null;
+
+    const normalize = (event: PointerEvent) =>
+      this.renderer?.clientToPhotoNormalized(event.clientX, event.clientY) ?? null;
+
+    const onPointerDown = (event: PointerEvent): void => {
+      const point = normalize(event);
+      if (!point) return;
+      const fly = this.flyControls?.getFlyState();
+      if (!fly) return;
+      event.preventDefault();
+      const result = interaction.pointerDown(point.x, point.y, fly.x, fly.y);
+      if (result === 'dragging') {
+        activePointerId = event.pointerId;
+        canvas.setPointerCapture(event.pointerId);
+      }
+    };
+
+    const onPointerMove = (event: PointerEvent): void => {
+      if (!interaction.isDragging || event.pointerId !== activePointerId) return;
+      const point = normalize(event);
+      if (!point) return;
+      event.preventDefault();
+      interaction.pointerMove(point.x, point.y);
+    };
+
+    const endPointer = (event: PointerEvent): void => {
+      if (event.pointerId !== activePointerId) return;
+      interaction.pointerUp();
+      if (canvas.hasPointerCapture(event.pointerId)) {
+        canvas.releasePointerCapture(event.pointerId);
+      }
+      activePointerId = null;
+    };
+
+    canvas.addEventListener('pointerdown', onPointerDown);
+    canvas.addEventListener('pointermove', onPointerMove);
+    canvas.addEventListener('pointerup', endPointer);
+    canvas.addEventListener('pointercancel', endPointer);
+
+    this.pointerCleanup = () => {
+      canvas.removeEventListener('pointerdown', onPointerDown);
+      canvas.removeEventListener('pointermove', onPointerMove);
+      canvas.removeEventListener('pointerup', endPointer);
+      canvas.removeEventListener('pointercancel', endPointer);
+    };
   }
 
   private async loadFile(file: File, imageName: HTMLElement, error: HTMLElement): Promise<void> {
@@ -156,14 +213,6 @@ export class CanvasPanel {
       error.hidden = true;
       error.textContent = '';
       this.onImageChanged?.();
-
-      if (this.onVisionFrame) {
-        try {
-          this.onVisionFrame(extractVisionFrame(nextBitmap));
-        } catch {
-          this.onVisionFrame(null);
-        }
-      }
     } catch (cause) {
       const appError = cause instanceof AppError ? cause : new AppError('IMAGE_DECODE', cause);
       error.textContent = appError.message;
