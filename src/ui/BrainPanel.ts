@@ -1,7 +1,42 @@
 import { APP_NAME } from '../app/constants';
+import { AppState, type AppSnapshot } from '../app/AppState';
+
+export interface BrainPanelControls {
+  onPause(): void;
+  onResume(): void;
+  onReset(): void;
+}
+
+function formatMetric(value: number): string {
+  return value.toFixed(3);
+}
+
+function statusLabel(snapshot: AppSnapshot): string {
+  switch (snapshot.brainStatus) {
+    case 'idle':
+      return 'MaleCNS circuit: not loaded';
+    case 'loading':
+      return 'MaleCNS circuit: loading circuit';
+    case 'ready':
+      return 'MaleCNS circuit: brain ready';
+    case 'paused':
+      return 'MaleCNS circuit: paused';
+    case 'error':
+      return 'MaleCNS circuit: error';
+  }
+}
 
 export class BrainPanel {
+  private unsubscribe: (() => void) | null = null;
+
+  constructor(
+    private readonly state: AppState,
+    private readonly controls: BrainPanelControls,
+  ) {}
+
   mount(host: HTMLElement): void {
+    this.unsubscribe?.();
+
     const header = document.createElement('header');
     header.className = 'panel-header';
 
@@ -12,22 +47,97 @@ export class BrainPanel {
     subtitle.textContent = 'Brain';
     identity.append(title, subtitle);
 
+    const controlsHost = document.createElement('div');
+    controlsHost.className = 'brain-controls';
+
     const runButton = document.createElement('button');
     runButton.type = 'button';
-    runButton.disabled = true;
-    runButton.textContent = 'Run';
 
-    header.append(identity, runButton);
+    const resetButton = document.createElement('button');
+    resetButton.type = 'button';
+    resetButton.textContent = 'Reset';
+
+    controlsHost.append(runButton, resetButton);
+    header.append(identity, controlsHost);
 
     const status = document.createElement('p');
     status.className = 'circuit-status';
-    status.textContent = 'MaleCNS circuit: not loaded';
+
+    const error = document.createElement('p');
+    error.className = 'brain-error';
+    error.setAttribute('role', 'alert');
+    error.hidden = true;
+
+    const metrics = document.createElement('div');
+    metrics.className = 'brain-metrics';
+    const metricElements = {
+      turn: this.createMetric('Turn', 'brain-turn'),
+      forward: this.createMetric('Forward', 'brain-forward'),
+      dwell: this.createMetric('Dwell', 'brain-dwell'),
+      arousal: this.createMetric('Arousal', 'brain-arousal'),
+    };
+    metrics.append(
+      metricElements.turn.root,
+      metricElements.forward.root,
+      metricElements.dwell.root,
+      metricElements.arousal.root,
+    );
 
     const graphHost = document.createElement('div');
     graphHost.className = 'brain-graph-host';
     graphHost.setAttribute('aria-label', 'Brain graph workspace');
-    graphHost.textContent = 'Neural activity will appear here.';
 
-    host.replaceChildren(header, status, graphHost);
+    host.replaceChildren(header, status, error, metrics, graphHost);
+
+    runButton.addEventListener('click', () => {
+      const snapshot = this.state.getSnapshot();
+      if (snapshot.brainStatus === 'ready') this.controls.onPause();
+      else if (snapshot.brainStatus === 'paused') this.controls.onResume();
+    });
+    resetButton.addEventListener('click', () => this.controls.onReset());
+
+    const render = (snapshot: AppSnapshot): void => {
+      status.textContent = statusLabel(snapshot);
+      error.textContent = snapshot.brainError ?? '';
+      error.hidden = snapshot.brainError === null;
+
+      runButton.textContent = snapshot.brainStatus === 'paused' ? 'Resume' : 'Pause';
+      runButton.disabled = !['ready', 'paused'].includes(snapshot.brainStatus);
+      resetButton.disabled = !['ready', 'paused'].includes(snapshot.brainStatus);
+
+      metricElements.turn.value.textContent = formatMetric(snapshot.behavior.turn);
+      metricElements.forward.value.textContent = formatMetric(snapshot.behavior.forward);
+      metricElements.dwell.value.textContent = formatMetric(snapshot.behavior.dwell);
+      metricElements.arousal.value.textContent = formatMetric(snapshot.behavior.arousal);
+
+      const activation = snapshot.brainActivation;
+      if (!activation || activation.length === 0) {
+        graphHost.textContent = 'Waiting for neural activity…';
+      } else {
+        let total = 0;
+        for (const value of activation) total += value;
+        graphHost.textContent = `${activation.length} neurons · mean simulated activity ${(total / activation.length).toFixed(3)}`;
+      }
+    };
+
+    render(this.state.getSnapshot());
+    this.unsubscribe = this.state.subscribe(render);
+  }
+
+  dispose(): void {
+    this.unsubscribe?.();
+    this.unsubscribe = null;
+  }
+
+  private createMetric(label: string, testId: string): { root: HTMLElement; value: HTMLElement } {
+    const root = document.createElement('div');
+    root.className = 'brain-metric';
+    const name = document.createElement('span');
+    name.textContent = label;
+    const value = document.createElement('strong');
+    value.dataset.testid = testId;
+    value.textContent = '0.000';
+    root.append(name, value);
+    return { root, value };
   }
 }
