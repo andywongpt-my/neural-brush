@@ -41,6 +41,14 @@ describe('packCircuit', () => {
     ]).toEqual([1, 2, 7]);
   });
 
+  it('keeps DNa steering ports lateralized without inventing a forward-speed readout', () => {
+    const { metadata } = packCircuit(fixture);
+
+    expect(metadata.behaviorPorts.turnLeft).toEqual(['200']);
+    expect(metadata.behaviorPorts.turnRight).toEqual(['300']);
+    expect(metadata.behaviorPorts.forward).toEqual([]);
+  });
+
   it('rejects an edge endpoint outside the selected neuron set', () => {
     const raw = cloneFixture();
     raw.edges[0] = { source: '999', target: '300', weight: 7 };
