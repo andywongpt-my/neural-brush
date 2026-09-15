@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { packCircuit, type RawCircuit } from '../../tools/malecns-export/pack';
+import {
+  buildAssetBundle,
+  packCircuit,
+  type RawCircuit,
+} from '../../tools/malecns-export/pack';
+import { sha256Hex } from '../../tools/malecns-export/hash';
 import fixture from '../fixtures/raw-circuit.fixture.json';
 
 function cloneFixture(): RawCircuit {
@@ -51,5 +56,24 @@ describe('packCircuit', () => {
     raw.edges[0] = { ...raw.edges[0], weight };
 
     expect(() => packCircuit(raw)).toThrow('Edge weight must be a positive integer');
+  });
+});
+
+describe('buildAssetBundle', () => {
+  it('serializes deterministic metadata and manifest hashes', () => {
+    const raw = cloneFixture();
+    const rawText = JSON.stringify(raw);
+    const generatedAt = '2026-09-15T00:00:00.000Z';
+    const bundle = buildAssetBundle(raw, rawText, generatedAt);
+
+    expect(bundle.manifest.generatedAt).toBe(generatedAt);
+    expect(bundle.manifest.rawSha256).toBe(sha256Hex(rawText));
+    expect(bundle.manifest.binarySha256).toBe(sha256Hex(bundle.binary));
+    expect(JSON.parse(bundle.metadataText).neurons.map((neuron: { bodyId: string }) => neuron.bodyId)).toEqual([
+      '100',
+      '200',
+      '300',
+    ]);
+    expect(JSON.parse(bundle.manifestText)).toEqual(bundle.manifest);
   });
 });
