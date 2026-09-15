@@ -12,6 +12,12 @@ test('boots the Brain-first workspace with a live MaleCNS worker', async ({ page
   await expect(page.getByTestId('brain-forward')).toBeVisible();
   await expect(page.getByTestId('brain-dwell')).toBeVisible();
   await expect(page.getByTestId('brain-arousal')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Pause' }).click();
+  await expect(page.getByText('MaleCNS circuit: paused')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Resume' })).toBeEnabled();
+  await page.getByRole('button', { name: 'Resume' }).click();
+  await expect(page.getByText('MaleCNS circuit: brain ready')).toBeVisible();
 });
 
 test('loads a local image into the Three.js canvas while the brain remains ready', async ({ page }) => {
