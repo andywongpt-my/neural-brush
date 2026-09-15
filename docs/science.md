@@ -35,9 +35,13 @@ Optional AI semantic masks, if introduced later, are also external synthetic mod
 
 ### Behavior readouts
 
-DNa01/DNa02 are used as descending steering-centered seeds. The pipeline accepts left/right groupings only when upstream soma-side metadata supplies `L`/`R`; it does not infer laterality from names.
+DNa01/DNa02 are used as descending steering-centered seeds. Published physiology shows that activity in these bilateral neurons predicts steering, with the right-left activity difference related to rotational velocity; activity on one side is associated with ipsilateral steering. The exporter therefore uses source `somaSide` metadata to define `turnLeft` and `turnRight`, and it refuses to guess laterality when source metadata is insufficient.
 
-Neural Brush then defines application readouts such as `turnLeft`, `turnRight`, and aggregate `forward`. These readouts are modeling interfaces used to control fly movement. They are not claims that MaleCNS itself contains Neural Brush-specific behavior channels.
+V1 deliberately leaves the `forward` behavior port empty. DNa01/DNa02 are not treated as a verified forward-speed command. A future forward-drive readout must be selected from separate biological evidence before it can be populated in the source-data layer.
+
+Reference: *Neural circuit mechanisms for steering control in walking Drosophila*, eLife, DOI `10.7554/eLife.102230`.
+
+These behavior ports remain application-facing readout interfaces; they do not imply that MaleCNS itself contains Neural Brush-specific channels or artistic outputs.
 
 ### Neural dynamics
 
@@ -49,7 +53,7 @@ Predicted neurotransmitter labels are therefore shown as source metadata; Neural
 
 ### Artistic brush output
 
-`Smear`, `Saturation`, and `Glow` are creative image-processing effects. The neural layer outputs behavior-level state such as turning, forward drive, dwell, and aggregate activity; the artistic layer maps that state to brush parameters.
+`Smear`, `Saturation`, and `Glow` are creative image-processing effects. The neural layer outputs behavior-level state such as steering and aggregate activity. Any later forward drive, dwell, or similar behavior variable must be clearly identified as either an evidence-backed readout or a modeling layer before the artistic layer maps it to brush parameters.
 
 There is no claim that MaleCNS contains a “Smear neuron,” “Glow neuron,” or any biological output corresponding directly to a photo-editor effect.
 
