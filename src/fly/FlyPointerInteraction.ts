@@ -8,6 +8,7 @@ export interface FlyPointerCallbacks {
 export type PointerDownResult = 'dragging' | 'followTarget';
 
 const clamp01 = (value: number): number => Math.min(1, Math.max(0, value));
+const HIT_EPSILON = Number.EPSILON * 8;
 
 function validateFinite(name: string, value: number): void {
   if (!Number.isFinite(value)) {
@@ -46,7 +47,7 @@ export class FlyPointerInteraction {
     const clampedY = clamp01(y);
     const distance = Math.hypot(clampedX - flyX, clampedY - flyY);
 
-    if (distance <= this.hitRadius) {
+    if (distance <= this.hitRadius + HIT_EPSILON) {
       this.dragging = true;
       this.callbacks.onDragStart(clampedX, clampedY);
       return 'dragging';
