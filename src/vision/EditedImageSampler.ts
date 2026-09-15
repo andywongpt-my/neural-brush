@@ -1,3 +1,4 @@
+import type * as THREE from 'three';
 import { LocalVision, type SensorySample } from './LocalVision';
 
 export interface ReadbackRect {
@@ -11,6 +12,17 @@ export interface ImageDataLike {
   data: Uint8ClampedArray;
   width: number;
   height: number;
+}
+
+export interface RenderTargetReader {
+  readRenderTargetPixels(
+    target: THREE.WebGLRenderTarget,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    buffer: Uint8Array,
+  ): void;
 }
 
 export const MAX_EDITED_PATCH_SIZE = 32;
@@ -88,6 +100,39 @@ export function flipReadbackRows(
     );
   }
   return topDown;
+}
+
+export function readEditedPatch(
+  reader: RenderTargetReader,
+  target: THREE.WebGLRenderTarget,
+  targetWidth: number,
+  targetHeight: number,
+  xNorm: number,
+  yNorm: number,
+  radiusPx: number,
+): ImageDataLike {
+  const rect = calculateReadbackRect(
+    targetWidth,
+    targetHeight,
+    xNorm,
+    yNorm,
+    radiusPx,
+  );
+  const bottomUp = new Uint8Array(rect.width * rect.height * 4);
+  reader.readRenderTargetPixels(
+    target,
+    rect.x,
+    rect.y,
+    rect.width,
+    rect.height,
+    bottomUp,
+  );
+
+  return {
+    data: flipReadbackRows(bottomUp, rect.width, rect.height),
+    width: rect.width,
+    height: rect.height,
+  };
 }
 
 export function sampleEditedPatch(
