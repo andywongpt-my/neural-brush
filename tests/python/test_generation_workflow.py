@@ -19,6 +19,16 @@ class GenerationWorkflowTests(unittest.TestCase):
         self.assertNotIn("          ref: feature/malecns-data-pipeline\n", text)
         self.assertNotIn("HEAD:feature/malecns-data-pipeline", text)
 
+    def test_asset_commit_is_reproducible_and_race_safe(self) -> None:
+        text = WORKFLOW.read_text(encoding="utf-8")
+
+        self.assertIn(
+            'NEURAL_BRUSH_GENERATED_AT=$(git show -s --format=%cI HEAD)',
+            text,
+        )
+        self.assertIn('git fetch origin "$GITHUB_REF_NAME"', text)
+        self.assertIn('git rebase "origin/$GITHUB_REF_NAME"', text)
+
 
 if __name__ == "__main__":
     unittest.main()
