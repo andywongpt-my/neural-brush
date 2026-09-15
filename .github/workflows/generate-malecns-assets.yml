@@ -5,7 +5,10 @@ on:
     branches:
       - feature/malecns-data-pipeline
     paths:
-      - 'tools/malecns-export/**'
+      - 'tools/malecns-export/export_bulk.py'
+      - 'tools/malecns-export/circuit-selection.json'
+      - 'tools/malecns-export/pack.ts'
+      - 'tools/malecns-export/hash.ts'
       - 'src/brain/CircuitTypes.ts'
       - 'package.json'
       - 'package-lock.json'
@@ -18,73 +21,77 @@ permissions:
 jobs:
   generate:
     runs-on: ubuntu-latest
-    env:
-      NEUPRINT_TOKEN: ${{ secrets.NEUPRINT_TOKEN }}
     steps:
-      - name: Check neuPrint token availability
-        id: token
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Cache public MaleCNS v1.0 Feather snapshot
+        uses: actions/cache@v4
+        with:
+          path: tools/malecns-export/cache
+          key: male-cns-v1.0-flat-connectome-minconf-0.5-v1
+
+      - name: Download official public MaleCNS tables
         shell: bash
         run: |
-          if [ -n "$NEUPRINT_TOKEN" ]; then
-            echo "available=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "available=false" >> "$GITHUB_OUTPUT"
-          fi
+          set -euo pipefail
+          cache='tools/malecns-export/cache'
+          mkdir -p "$cache"
+          base='https://storage.googleapis.com/flyem-male-cns/v1.0/connectome-data/flat-connectome'
+          download() {
+            local name="$1"
+            if [ -s "$cache/$name" ]; then
+              echo "Using cached $name"
+              return
+            fi
+            curl -fL --retry 4 --retry-all-errors -o "$cache/$name.part" "$base/$name"
+            mv "$cache/$name.part" "$cache/$name"
+          }
+          download 'body-annotations-male-cns-v1.0-minconf-0.5.feather'
+          download 'body-neurotransmitters-male-cns-v1.0.feather'
+          download 'connectome-weights-male-cns-v1.0-minconf-0.5.feather'
+          ls -lh "$cache"
 
-      - name: Token not configured
-        if: steps.token.outputs.available != 'true'
-        run: echo 'NEUPRINT_TOKEN repository secret is not configured; skipping real MaleCNS export.'
+      - name: Install bulk-export dependency
+        run: pip install pyarrow==25.0.1
 
-      - uses: actions/checkout@v4
-        if: steps.token.outputs.available == 'true'
+      - name: Export deterministic DNa steering subgraph
+        run: python tools/malecns-export/export_bulk.py
 
-      - uses: r-lib/actions/setup-r@v2
-        if: steps.token.outputs.available == 'true'
-        with:
-          r-version: 'release'
-
-      - name: Install MaleCNS R dependencies
-        if: steps.token.outputs.available == 'true'
+      - name: Record source hashes
+        shell: bash
         run: |
-          Rscript -e 'install.packages(c("natmanager", "jsonlite", "dplyr"), repos="https://cloud.r-project.org")'
-          Rscript -e 'natmanager::install(pkgs="natverse/malecns")'
-
-      - name: Export real male-cns:v1.0 circuit
-        if: steps.token.outputs.available == 'true'
-        env:
-          neuprint_token: ${{ secrets.NEUPRINT_TOKEN }}
-        run: Rscript tools/malecns-export/export.R
+          sha256sum tools/malecns-export/cache/*.feather > tools/malecns-export/out/source-checksums.txt
+          cat tools/malecns-export/out/source-checksums.txt
 
       - uses: actions/setup-node@v4
-        if: steps.token.outputs.available == 'true'
         with:
           node-version: 22
           cache: npm
 
-      - name: Install Node dependencies
-        if: steps.token.outputs.available == 'true'
-        run: npm ci
+      - run: npm ci
 
       - name: Pack compact browser assets
-        if: steps.token.outputs.available == 'true'
         run: npm run data:pack
 
       - name: Validate generated assets
-        if: steps.token.outputs.available == 'true'
         shell: bash
         run: |
+          set -euo pipefail
           test -s tools/malecns-export/out/raw-circuit.json
           test -s public/data/male-cns-v1/circuit.bin
           test -s public/data/male-cns-v1/metadata.json
           test -s public/data/male-cns-v1/manifest.json
-          if grep -Fq "$NEUPRINT_TOKEN" tools/malecns-export/out/raw-circuit.json public/data/male-cns-v1/metadata.json public/data/male-cns-v1/manifest.json; then
-            echo 'Token material found in generated JSON output' >&2
-            exit 1
-          fi
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
           const metadata = JSON.parse(fs.readFileSync('public/data/male-cns-v1/metadata.json', 'utf8'));
           const manifest = JSON.parse(fs.readFileSync('public/data/male-cns-v1/manifest.json', 'utf8'));
+          const totalBytes = ['circuit.bin', 'metadata.json', 'manifest.json']
+            .map(name => fs.statSync(`public/data/male-cns-v1/${name}`).size)
+            .reduce((a, b) => a + b, 0);
           if (metadata.dataset !== 'male-cns:v1.0') throw new Error('Unexpected dataset');
           if (metadata.circuit !== 'dna-steering-v1') throw new Error('Unexpected circuit');
           if (metadata.behaviorPorts.turnLeft.length === 0 || metadata.behaviorPorts.turnRight.length === 0) {
@@ -94,11 +101,11 @@ jobs:
             throw new Error('V1 DNa circuit must not invent a forward-speed readout');
           }
           if (manifest.neuronCount !== metadata.neurons.length) throw new Error('Neuron count mismatch');
-          console.log(`Validated ${manifest.neuronCount} neurons and ${manifest.edgeCount} edges`);
+          if (totalBytes > 10 * 1024 * 1024) throw new Error(`Payload exceeds 10 MiB: ${totalBytes}`);
+          console.log(`Validated ${manifest.neuronCount} neurons, ${manifest.edgeCount} edges, ${totalBytes} bytes`);
           NODE
 
       - name: Upload auditable MaleCNS assets
-        if: steps.token.outputs.available == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: male-cns-v1-neural-brush-assets
@@ -106,6 +113,7 @@ jobs:
           if-no-files-found: error
           path: |
             tools/malecns-export/out/raw-circuit.json
+            tools/malecns-export/out/source-checksums.txt
             public/data/male-cns-v1/circuit.bin
             public/data/male-cns-v1/metadata.json
             public/data/male-cns-v1/manifest.json
