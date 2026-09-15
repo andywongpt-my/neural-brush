@@ -1,4 +1,5 @@
 out/
+cache/
 .Renviron
 .Rhistory
 .Rproj.user/
