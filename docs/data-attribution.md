@@ -65,7 +65,7 @@ The verified V1 snapshot contains:
 
 - **151 neurons**
 - **3,901 directed internal edges**
-- **79,563 bytes** total across `circuit.bin`, `metadata.json`, and `manifest.json`
+- **79,569 bytes** total across `circuit.bin`, `metadata.json`, and `manifest.json`
 - raw-circuit SHA-256: `003673d40e6e274a622cb92160c06def6186f908e7a557d16ace0734395f4e9d`
 - binary SHA-256: `186c3e2da2f65180523156c85170fd35acbb59eba4bc77f323d5175c1ebdc02c`
 
