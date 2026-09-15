@@ -24,6 +24,7 @@ const DEFAULT_BRAIN_SEED = 0x4e425631; // "NBV1"
 const VISION_RADIUS_PX = 8;
 const MAX_FRAME_DT_SECONDS = 0.05;
 const SENSORY_RATE_HZ = 30;
+const MIN_DRAG_DT_SECONDS = 1 / 240;
 
 export class NeuralBrushApp {
   private readonly state = new AppState();
@@ -35,7 +36,14 @@ export class NeuralBrushApp {
   private readonly sensoryCadence = new SensoryCadence(SENSORY_RATE_HZ);
   private readonly canvasPanel = new CanvasPanel(
     this.state,
-    undefined,
+    {
+      getFlyState: () => this.flyController.state,
+      onDragStart: (x, y) => this.beginFlyDrag(x, y),
+      onDrag: (x, y) => this.dragFly(x, y),
+      onDragEnd: () => this.endFlyDrag(),
+      onFollowTarget: (x, y) => this.flyController.setFollowTarget(x, y),
+      onAutonomous: () => this.flyController.clearFollowTarget(),
+    },
     () => this.resetSensoryFeedback(),
   );
   private circuit: CircuitGraph | null = null;
@@ -47,6 +55,7 @@ export class NeuralBrushApp {
   private brushMode: BrushMode = 'blend';
   private animationFrameId: number | null = null;
   private lastFrameTimeMs: number | null = null;
+  private lastDragTimeMs: number | null = null;
   private disposed = false;
 
   constructor(private readonly host: HTMLElement) {}
@@ -103,6 +112,7 @@ export class NeuralBrushApp {
     this.brainWorker.setModulation(this.modulation.snapshot());
     this.flyController = new FlyController();
     this.state.resetRuntime();
+    this.canvasPanel.updateFly(this.flyController.state);
     this.resetSensoryFeedback();
     this.state.setBrainStatus('ready');
   }
@@ -176,11 +186,12 @@ export class NeuralBrushApp {
 
       const snapshot = this.state.getSnapshot();
       if (snapshot.brainStatus === 'ready') {
-        let fly = snapshot.fly;
+        let fly = this.flyController.state;
         if (dtSeconds > 0) {
           fly = this.flyController.step(snapshot.behavior, dtSeconds);
           this.state.setFly(fly);
         }
+        this.canvasPanel.updateFly(fly);
 
         if (snapshot.imageName !== null) {
           const brushFrame = mapFlyToBrush(fly, snapshot.behavior, this.brushMode);
@@ -218,6 +229,28 @@ export class NeuralBrushApp {
     );
     this.previousEditedPatch = patch;
     this.brainWorker.sendSensory(drive);
+  }
+
+  private beginFlyDrag(x: number, y: number): void {
+    this.lastDragTimeMs = performance.now();
+    const fly = this.flyController.beginDrag(x, y);
+    this.state.setFly(fly);
+    this.canvasPanel.updateFly(fly);
+  }
+
+  private dragFly(x: number, y: number): void {
+    const now = performance.now();
+    const previous = this.lastDragTimeMs ?? now;
+    const dtSeconds = Math.max(MIN_DRAG_DT_SECONDS, (now - previous) / 1000);
+    this.lastDragTimeMs = now;
+    const fly = this.flyController.dragTo(x, y, dtSeconds);
+    this.state.setFly(fly);
+    this.canvasPanel.updateFly(fly);
+  }
+
+  private endFlyDrag(): void {
+    this.flyController.endDrag();
+    this.lastDragTimeMs = null;
   }
 
   private resetSensoryFeedback(): void {
