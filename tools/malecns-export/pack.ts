@@ -8,6 +8,7 @@ import { pathToFileURL } from 'node:url';
 import {
   CIRCUIT_SCHEMA_VERSION,
   DATASET_ID,
+  SOURCE_ID,
   type CircuitManifest,
   type CircuitMetadata,
   type CircuitNeuron,
@@ -195,7 +196,7 @@ export function packCircuit(raw: RawCircuit): PackedCircuit {
     schema: CIRCUIT_SCHEMA_VERSION,
     dataset: DATASET_ID,
     circuit: CIRCUIT_ID,
-    source: 'neuprint.janelia.org',
+    source: SOURCE_ID,
     seedSelectors: ['DNa01', 'DNa02'],
     neuronCount: neurons.length,
     edgeCount: indexedEdges.length,
@@ -218,45 +219,38 @@ export function buildAssetBundle(
     binarySha256: sha256Hex(binary),
   };
   const manifestText = `${JSON.stringify(manifest, null, 2)}\n`;
-  const encoder = new TextEncoder();
-  const payloadBytes =
-    binary.byteLength +
-    encoder.encode(metadataText).byteLength +
-    encoder.encode(manifestText).byteLength;
-
-  if (payloadBytes > MAX_BROWSER_PAYLOAD_BYTES) {
+  const totalBytes =
+    new TextEncoder().encode(metadataText).byteLength +
+    new TextEncoder().encode(manifestText).byteLength +
+    binary.byteLength;
+  if (totalBytes > MAX_BROWSER_PAYLOAD_BYTES) {
     throw new Error(
-      `MaleCNS browser payload exceeds 10 MiB (${payloadBytes} bytes)`,
+      `Packed browser payload exceeds 10 MiB: ${totalBytes} bytes`,
     );
   }
-
   return { metadataText, manifest, manifestText, binary };
 }
 
 export function runPacker(
-  inputPath: string,
-  outputDir: string,
-  generatedAt: string,
+  inputPath = DEFAULT_INPUT_PATH,
+  outputDir = DEFAULT_OUTPUT_DIR,
+  generatedAt = new Date().toISOString(),
 ): AssetBundle {
   const rawText = readFileSync(inputPath, 'utf8');
   const raw = JSON.parse(rawText) as RawCircuit;
   const bundle = buildAssetBundle(raw, rawText, generatedAt);
-
   mkdirSync(outputDir, { recursive: true });
+  writeFileSync(resolve(outputDir, 'metadata.json'), bundle.metadataText);
+  writeFileSync(resolve(outputDir, 'manifest.json'), bundle.manifestText);
   writeFileSync(resolve(outputDir, 'circuit.bin'), bundle.binary);
-  writeFileSync(resolve(outputDir, 'metadata.json'), bundle.metadataText, 'utf8');
-  writeFileSync(resolve(outputDir, 'manifest.json'), bundle.manifestText, 'utf8');
-
   return bundle;
 }
 
-const entryPath = process.argv[1];
-if (entryPath && pathToFileURL(resolve(entryPath)).href === import.meta.url) {
-  const bundle = runPacker(
-    DEFAULT_INPUT_PATH,
-    DEFAULT_OUTPUT_DIR,
-    new Date().toISOString(),
-  );
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(resolve(process.argv[1])).href
+) {
+  const bundle = runPacker();
   console.log(
     `Packed ${bundle.manifest.neuronCount} neurons and ${bundle.manifest.edgeCount} edges to ${DEFAULT_OUTPUT_DIR}`,
   );
