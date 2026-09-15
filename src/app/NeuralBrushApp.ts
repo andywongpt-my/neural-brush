@@ -6,7 +6,7 @@ import { SplitView } from '../ui/SplitView';
 export class NeuralBrushApp {
   private readonly state = new AppState();
   private readonly brainPanel = new BrainPanel();
-  private readonly canvasPanel = new CanvasPanel();
+  private readonly canvasPanel = new CanvasPanel(this.state);
 
   constructor(private readonly host: HTMLElement) {}
 

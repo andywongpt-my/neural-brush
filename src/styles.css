@@ -29,7 +29,8 @@ input {
 }
 
 button:focus-visible,
-.split-divider:focus-visible {
+.split-divider:focus-visible,
+.photo-picker:focus-within {
   outline: 2px solid #8ed7d0;
   outline-offset: 2px;
 }
@@ -120,17 +121,61 @@ button:focus-visible,
 .upload-drop-zone {
   display: grid;
   place-items: center;
-  min-height: 112px;
+  gap: 7px;
+  min-height: 136px;
   padding: 16px;
   color: #a9b6bd;
   border-style: dashed;
   background: #11171b;
+  text-align: center;
+}
+
+.photo-picker {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 16px;
+  color: #eef3f5;
+  background: #1a252b;
+  border: 1px solid #3a4b54;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.photo-picker input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.image-name,
+.image-error {
+  margin: 0;
+  font-size: 0.82rem;
+}
+
+.image-name {
+  color: #d3dde2;
+}
+
+.image-error {
+  color: #ffb7b7;
 }
 
 .three-canvas-host {
   min-height: 420px;
   margin-top: 14px;
+  overflow: hidden;
   background: #080b0d;
+}
+
+.photo-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 @media (max-width: 799px) {
