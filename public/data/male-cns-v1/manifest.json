@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "dataset": "male-cns:v1.0",
+  "circuit": "dna-steering-v1",
+  "source": "male-cns-public-bulk:v1.0",
+  "seedSelectors": [
+    "DNa01",
+    "DNa02"
+  ],
+  "neuronCount": 151,
+  "edgeCount": 3901,
+  "generatedAt": "2026-09-15T19:22:44+08:00",
+  "rawSha256": "003673d40e6e274a622cb92160c06def6186f908e7a557d16ace0734395f4e9d",
+  "binarySha256": "186c3e2da2f65180523156c85170fd35acbb59eba4bc77f323d5175c1ebdc02c"
+}

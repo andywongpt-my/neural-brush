@@ -1,0 +1,150 @@
+name: Generate MaleCNS Assets
+
+on:
+  push:
+    branches:
+      - main
+      - feature/malecns-data-pipeline
+    paths:
+      - 'tools/malecns-export/export_bulk.py'
+      - 'tools/malecns-export/circuit-selection.json'
+      - 'tools/malecns-export/pack.ts'
+      - 'tools/malecns-export/hash.ts'
+      - 'src/brain/CircuitTypes.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/generate-malecns-assets.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: malecns-assets-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Cache public MaleCNS v1.0 Feather snapshot
+        uses: actions/cache@v4
+        with:
+          path: tools/malecns-export/cache
+          key: male-cns-v1.0-flat-connectome-minconf-0.5-v1
+
+      - name: Download official public MaleCNS tables
+        shell: bash
+        run: |
+          set -euo pipefail
+          cache='tools/malecns-export/cache'
+          mkdir -p "$cache"
+          base='https://storage.googleapis.com/flyem-male-cns/v1.0/connectome-data/flat-connectome'
+          download() {
+            local name="$1"
+            if [ -s "$cache/$name" ]; then
+              echo "Using cached $name"
+              return
+            fi
+            curl -fL --retry 4 --retry-all-errors -o "$cache/$name.part" "$base/$name"
+            mv "$cache/$name.part" "$cache/$name"
+          }
+          download 'body-annotations-male-cns-v1.0-minconf-0.5.feather'
+          download 'body-neurotransmitters-male-cns-v1.0.feather'
+          download 'connectome-weights-male-cns-v1.0-minconf-0.5.feather'
+          ls -lh "$cache"
+
+      - name: Install bulk-export dependency
+        run: pip install pyarrow==25.0.1
+
+      - name: Export deterministic DNa steering subgraph
+        run: python tools/malecns-export/export_bulk.py
+
+      - name: Record source hashes
+        shell: bash
+        run: |
+          sha256sum tools/malecns-export/cache/*.feather > tools/malecns-export/out/source-checksums.txt
+          cat tools/malecns-export/out/source-checksums.txt
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Set deterministic generation timestamp
+        shell: bash
+        run: echo "NEURAL_BRUSH_GENERATED_AT=$(git show -s --format=%cI HEAD)" >> "$GITHUB_ENV"
+
+      - name: Pack compact browser assets
+        run: npm run data:pack
+
+      - name: Validate generated assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s tools/malecns-export/out/raw-circuit.json
+          test -s public/data/male-cns-v1/circuit.bin
+          test -s public/data/male-cns-v1/metadata.json
+          test -s public/data/male-cns-v1/manifest.json
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const metadata = JSON.parse(fs.readFileSync('public/data/male-cns-v1/metadata.json', 'utf8'));
+          const manifest = JSON.parse(fs.readFileSync('public/data/male-cns-v1/manifest.json', 'utf8'));
+          const totalBytes = ['circuit.bin', 'metadata.json', 'manifest.json']
+            .map(name => fs.statSync(`public/data/male-cns-v1/${name}`).size)
+            .reduce((a, b) => a + b, 0);
+          if (metadata.dataset !== 'male-cns:v1.0') throw new Error('Unexpected dataset');
+          if (metadata.circuit !== 'dna-steering-v1') throw new Error('Unexpected circuit');
+          if (manifest.source !== 'male-cns-public-bulk:v1.0') throw new Error('Unexpected source provenance');
+          if (metadata.behaviorPorts.turnLeft.length === 0 || metadata.behaviorPorts.turnRight.length === 0) {
+            throw new Error('Both steering sides must be source-verified');
+          }
+          if (metadata.behaviorPorts.forward.length !== 0) {
+            throw new Error('V1 DNa circuit must not invent a forward-speed readout');
+          }
+          if (manifest.neuronCount !== metadata.neurons.length) throw new Error('Neuron count mismatch');
+          if (totalBytes > 10 * 1024 * 1024) throw new Error(`Payload exceeds 10 MiB: ${totalBytes}`);
+          console.log(`Validated ${manifest.neuronCount} neurons, ${manifest.edgeCount} edges, ${totalBytes} bytes`);
+          NODE
+
+      - name: Commit verified compact runtime assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add \
+            public/data/male-cns-v1/circuit.bin \
+            public/data/male-cns-v1/metadata.json \
+            public/data/male-cns-v1/manifest.json
+          if git diff --cached --quiet; then
+            echo 'Compact MaleCNS assets already match the verified output.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'data: add verified MaleCNS v1 compact circuit assets'
+          git fetch origin "$GITHUB_REF_NAME"
+          git rebase "origin/$GITHUB_REF_NAME"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
+      - name: Upload auditable MaleCNS assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: male-cns-v1-neural-brush-assets
+          retention-days: 7
+          if-no-files-found: error
+          path: |
+            tools/malecns-export/out/raw-circuit.json
+            tools/malecns-export/out/source-checksums.txt
+            public/data/male-cns-v1/circuit.bin
+            public/data/male-cns-v1/metadata.json
+            public/data/male-cns-v1/manifest.json

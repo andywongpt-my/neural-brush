@@ -2,7 +2,7 @@
 
 Neural Brush is an open-source browser-based creative photo editor where a live fruit fly edits a user-supplied image while a MaleCNS-derived neural circuit is visualized alongside it.
 
-> Current implementation status: V1 foundation. The Brain-first workspace, local photo loading, Three.js canvas, typed error handling, CI, and GitHub Pages deployment are being established before the MaleCNS data pipeline and neural runtime are added.
+> Current implementation status: the V1 foundation is implemented, including the Brain-first workspace, local photo loading, Three.js canvas, typed error handling, CI, and the GitHub Pages deployment workflow. The MaleCNS `male-cns:v1.0` pipeline is also implemented: the repository contains a verified compact DNa01/DNa02-centered circuit generated from the official public MaleCNS bulk Feather snapshot, plus a deterministic packer and strict browser loader. The current compact circuit contains **151 neurons and 3,901 directed internal edges** and is about **78 KiB** uncompressed across the runtime data files.
 
 ## V1 architecture
 
@@ -10,6 +10,7 @@ Neural Brush is an open-source browser-based creative photo editor where a live 
 - Three.js with `WebGLRenderer`
 - Brain-first 58/42 split workspace on desktop
 - local PNG/JPEG/WebP photo loading
+- deterministic MaleCNS-derived compact circuit format and browser loader
 - no required backend for the static V1
 - GitHub Pages deployment from `main`
 
@@ -27,6 +28,7 @@ npm run dev
 Run the validation gates:
 
 ```bash
+python -m unittest discover -s tests/python -p 'test_*.py'
 npm run lint
 npm run typecheck
 npm test -- --run
@@ -34,6 +36,8 @@ npm run build
 npx playwright install chromium
 npm run test:e2e
 ```
+
+The offline MaleCNS data pipeline has separate reproduction instructions in [`tools/malecns-export/README.md`](tools/malecns-export/README.md). The canonical V1 exporter uses the **official public bulk MaleCNS v1.0 Feather files and does not require a neuPrint token**. A token-based `malecns`/R exporter remains available as an optional cross-check path; credentials must never be committed.
 
 ## GitHub Pages
 
@@ -53,10 +57,17 @@ The current image path is browser-local: user `File` → `ImageBitmap` → Three
 
 Future optional AI Vision integrations must remain explicit opt-in and must not place secret service API keys in the GitHub Pages client.
 
-## Scientific scope
+## MaleCNS data and scientific scope
 
-Neural Brush is intended to use a selected MaleCNS-derived connectome subgraph. It is not a complete electrophysiological simulation of a fruit-fly brain. Source biological facts and creative/simplified simulation layers are kept conceptually separate in the approved design.
+Neural Brush targets a selected connectome subgraph derived from the Janelia FlyEM Male CNS dataset `male-cns:v1.0`. Source topology, source connection weights, neuron identity, and available source metadata are kept separate from Neural Brush-specific adapter, behavior-readout, dynamics, and artistic layers.
+
+The V1 source-data layer uses source-verified DNa01/DNa02 laterality for `turnLeft` and `turnRight`. It deliberately leaves the `forward` source behavior port empty rather than inventing a forward-speed command that is not established by this circuit selection.
+
+Neural Brush is **not** a complete biological or electrophysiological simulation of a fruit-fly brain. Frontier `inputPort` nodes are application graph boundaries rather than claims about retinal identity; photo-derived sensory signals are synthetic external inputs; and Smear, Saturation, and Glow are artistic outputs rather than biological motor outputs.
+
+- Dataset provenance, source hashes, derived-file boundaries, and licensing: [`docs/data-attribution.md`](docs/data-attribution.md)
+- Scientific/modeling boundary: [`docs/science.md`](docs/science.md)
 
 ## License
 
-Neural Brush application code is licensed under the MIT License. MaleCNS-derived data will retain its upstream attribution and licensing requirements separately when those assets are introduced.
+Neural Brush original application code is licensed under the MIT License. MaleCNS source data and MaleCNS-derived assets retain their upstream attribution/licensing requirements; the repository's MIT license does not relicense those data assets.

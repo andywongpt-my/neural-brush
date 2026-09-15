@@ -9,7 +9,8 @@
     "typecheck": "tsc -b --pretty false",
     "lint": "eslint .",
     "test": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "data:pack": "tsx tools/malecns-export/pack.ts"
   },
   "dependencies": {
     "three": "^0.180.0"
@@ -17,8 +18,10 @@
   "devDependencies": {
     "@eslint/js": "^9.0.0",
     "@playwright/test": "^1.55.0",
+    "@types/node": "^26.5.1",
     "@types/three": "^0.180.0",
     "eslint": "^9.0.0",
+    "tsx": "^4.23.13",
     "typescript": "^5.9.0",
     "typescript-eslint": "^8.0.0",
     "vite": "^7.0.0",
