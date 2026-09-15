@@ -2,7 +2,7 @@
 
 Neural Brush is an open-source browser-based creative photo editor where a live fruit fly edits a user-supplied image while a MaleCNS-derived neural circuit is visualized alongside it.
 
-> Current implementation status: the V1 foundation is implemented, including the Brain-first workspace, local photo loading, Three.js canvas, typed error handling, CI, and the GitHub Pages deployment workflow. The reproducible MaleCNS `male-cns:v1.0` schema, exporter, deterministic binary packer, and strict browser circuit loader are also implemented. Real production circuit assets are intentionally not committed yet: they must be generated from the real dataset with a user-supplied neuPrint token and pass the Plan 2 data checks before they are treated as V1 source data.
+> Current implementation status: the V1 foundation is implemented, including the Brain-first workspace, local photo loading, Three.js canvas, typed error handling, CI, and the GitHub Pages deployment workflow. The MaleCNS `male-cns:v1.0` pipeline is also implemented: the repository contains a verified compact DNa01/DNa02-centered circuit generated from the official public MaleCNS bulk Feather snapshot, plus a deterministic packer and strict browser loader. The current compact circuit contains **151 neurons and 3,901 directed internal edges** and is about **78 KiB** uncompressed across the runtime data files.
 
 ## V1 architecture
 
@@ -28,6 +28,7 @@ npm run dev
 Run the validation gates:
 
 ```bash
+python -m unittest discover -s tests/python -p 'test_*.py'
 npm run lint
 npm run typecheck
 npm test -- --run
@@ -36,7 +37,7 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-The offline MaleCNS data pipeline has separate reproduction instructions in [`tools/malecns-export/README.md`](tools/malecns-export/README.md). It requires a private `neuprint_token`; credentials must never be committed.
+The offline MaleCNS data pipeline has separate reproduction instructions in [`tools/malecns-export/README.md`](tools/malecns-export/README.md). The canonical V1 exporter uses the **official public bulk MaleCNS v1.0 Feather files and does not require a neuPrint token**. A token-based `malecns`/R exporter remains available as an optional cross-check path; credentials must never be committed.
 
 ## GitHub Pages
 
@@ -60,9 +61,11 @@ Future optional AI Vision integrations must remain explicit opt-in and must not 
 
 Neural Brush targets a selected connectome subgraph derived from the Janelia FlyEM Male CNS dataset `male-cns:v1.0`. Source topology, source connection weights, neuron identity, and available source metadata are kept separate from Neural Brush-specific adapter, behavior-readout, dynamics, and artistic layers.
 
+The V1 source-data layer uses source-verified DNa01/DNa02 laterality for `turnLeft` and `turnRight`. It deliberately leaves the `forward` source behavior port empty rather than inventing a forward-speed command that is not established by this circuit selection.
+
 Neural Brush is **not** a complete biological or electrophysiological simulation of a fruit-fly brain. Frontier `inputPort` nodes are application graph boundaries rather than claims about retinal identity; photo-derived sensory signals are synthetic external inputs; and Smear, Saturation, and Glow are artistic outputs rather than biological motor outputs.
 
-- Dataset provenance, derived-file boundaries, and licensing: [`docs/data-attribution.md`](docs/data-attribution.md)
+- Dataset provenance, source hashes, derived-file boundaries, and licensing: [`docs/data-attribution.md`](docs/data-attribution.md)
 - Scientific/modeling boundary: [`docs/science.md`](docs/science.md)
 
 ## License
