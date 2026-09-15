@@ -12,6 +12,7 @@ const CIRCUIT_ID = 'dna-steering-v1' as const;
 const MAGIC = 'NBC1';
 const HEADER_BYTES = 12;
 const EDGE_RECORD_BYTES = 12;
+const MAX_BROWSER_PAYLOAD_BYTES = 10 * 1024 * 1024;
 
 interface RawNeuron {
   bodyId: string;
@@ -208,6 +209,17 @@ export function buildAssetBundle(
     binarySha256: sha256Hex(binary),
   };
   const manifestText = `${JSON.stringify(manifest, null, 2)}\n`;
+  const encoder = new TextEncoder();
+  const payloadBytes =
+    binary.byteLength +
+    encoder.encode(metadataText).byteLength +
+    encoder.encode(manifestText).byteLength;
+
+  if (payloadBytes > MAX_BROWSER_PAYLOAD_BYTES) {
+    throw new Error(
+      `MaleCNS browser payload exceeds 10 MiB (${payloadBytes} bytes)`,
+    );
+  }
 
   return { metadataText, manifest, manifestText, binary };
 }
