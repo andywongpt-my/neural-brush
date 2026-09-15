@@ -76,4 +76,14 @@ describe('buildAssetBundle', () => {
     ]);
     expect(JSON.parse(bundle.manifestText)).toEqual(bundle.manifest);
   });
+
+  it('rejects a browser payload larger than 10 MiB', () => {
+    const raw = cloneFixture();
+    raw.neurons[0].type = 'x'.repeat(10 * 1024 * 1024);
+    const rawText = JSON.stringify(raw);
+
+    expect(() =>
+      buildAssetBundle(raw, rawText, '2026-09-15T00:00:00.000Z'),
+    ).toThrow('10 MiB');
+  });
 });
