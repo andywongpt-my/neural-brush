@@ -2,6 +2,10 @@ import * as THREE from 'three';
 import { AppError } from '../app/AppError';
 import { BrushPipeline } from '../brush/BrushPipeline';
 import type { BrushFrame, BrushMode } from '../brush/BrushTypes';
+import {
+  readEditedPatch as readTargetPatch,
+  type ImageDataLike,
+} from '../vision/EditedImageSampler';
 
 export class CanvasRenderer {
   private readonly scene = new THREE.Scene();
@@ -60,6 +64,26 @@ export class CanvasRenderer {
     this.brushPipeline.apply(frame, mode);
     this.material.map = this.brushPipeline.texture;
     this.render();
+  }
+
+  readEditedPatch(
+    xNorm: number,
+    yNorm: number,
+    radiusPx: number,
+  ): ImageDataLike | null {
+    if (!this.sourceTexture || this.imageWidth <= 0 || this.imageHeight <= 0) {
+      return null;
+    }
+
+    return readTargetPatch(
+      this.renderer,
+      this.brushPipeline.currentTarget,
+      this.imageWidth,
+      this.imageHeight,
+      xNorm,
+      yNorm,
+      radiusPx,
+    );
   }
 
   resetImage(): void {
