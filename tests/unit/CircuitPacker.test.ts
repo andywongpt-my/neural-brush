@@ -1,7 +1,11 @@
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   buildAssetBundle,
   packCircuit,
+  runPacker,
   type RawCircuit,
 } from '../../tools/malecns-export/pack';
 import { sha256Hex } from '../../tools/malecns-export/hash';
@@ -85,5 +89,26 @@ describe('buildAssetBundle', () => {
     expect(() =>
       buildAssetBundle(raw, rawText, '2026-09-15T00:00:00.000Z'),
     ).toThrow('10 MiB');
+  });
+});
+
+describe('runPacker', () => {
+  it('writes circuit, metadata, and manifest assets from a raw JSON file', () => {
+    const outputDir = mkdtempSync(join(tmpdir(), 'neural-brush-pack-'));
+    try {
+      runPacker(
+        'tests/fixtures/raw-circuit.fixture.json',
+        outputDir,
+        '2026-09-15T00:00:00.000Z',
+      );
+
+      expect(new TextDecoder().decode(readFileSync(join(outputDir, 'circuit.bin')).subarray(0, 4))).toBe('NBC1');
+      expect(JSON.parse(readFileSync(join(outputDir, 'metadata.json'), 'utf8')).neurons).toHaveLength(3);
+      expect(JSON.parse(readFileSync(join(outputDir, 'manifest.json'), 'utf8')).generatedAt).toBe(
+        '2026-09-15T00:00:00.000Z',
+      );
+    } finally {
+      rmSync(outputDir, { recursive: true, force: true });
+    }
   });
 });
