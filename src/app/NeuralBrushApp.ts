@@ -6,17 +6,24 @@ import type { CircuitGraph } from '../brain/CircuitGraph';
 import { toEngineGraph } from '../brain/EngineGraphAdapter';
 import { ModulationLayer } from '../brain/ModulationLayer';
 import type { EngineGraph } from '../brain/BrainRuntimeTypes';
+import { mapFlyToBrush } from '../brush/BrushBehaviorMap';
+import type { BrushMode } from '../brush/BrushTypes';
 import { FlyController } from '../fly/FlyController';
-import { LocalVision } from '../vision/LocalVision';
+import {
+  sampleEditedPatch,
+  type ImageDataLike,
+} from '../vision/EditedImageSampler';
 import { SensoryAdapter } from '../vision/SensoryAdapter';
+import { SensoryCadence } from '../vision/SensoryCadence';
 import { BrainPanel } from '../ui/BrainPanel';
-import { CanvasPanel, type VisionFrame } from '../ui/CanvasPanel';
+import { CanvasPanel } from '../ui/CanvasPanel';
 import { ErrorBanner } from '../ui/ErrorBanner';
 import { SplitView } from '../ui/SplitView';
 
 const DEFAULT_BRAIN_SEED = 0x4e425631; // "NBV1"
 const VISION_RADIUS_PX = 8;
 const MAX_FRAME_DT_SECONDS = 0.05;
+const SENSORY_RATE_HZ = 30;
 
 export class NeuralBrushApp {
   private readonly state = new AppState();
@@ -25,15 +32,19 @@ export class NeuralBrushApp {
     onResume: () => this.resumeBrain(),
     onReset: () => this.resetBrain(),
   });
-  private readonly canvasPanel = new CanvasPanel(this.state, (frame) => {
-    this.visionFrame = frame;
-  });
+  private readonly sensoryCadence = new SensoryCadence(SENSORY_RATE_HZ);
+  private readonly canvasPanel = new CanvasPanel(
+    this.state,
+    undefined,
+    () => this.resetSensoryFeedback(),
+  );
   private circuit: CircuitGraph | null = null;
   private engineGraph: EngineGraph | null = null;
   private modulation: ModulationLayer | null = null;
   private brainWorker: BrainWorkerClient | null = null;
   private flyController = new FlyController();
-  private visionFrame: VisionFrame | null = null;
+  private previousEditedPatch: ImageDataLike | null = null;
+  private brushMode: BrushMode = 'blend';
   private animationFrameId: number | null = null;
   private lastFrameTimeMs: number | null = null;
   private disposed = false;
@@ -81,6 +92,10 @@ export class NeuralBrushApp {
     worker.setModulation(modulation.snapshot());
   }
 
+  setBrushMode(mode: BrushMode): void {
+    this.brushMode = mode;
+  }
+
   resetBrain(): void {
     if (!this.brainWorker || !this.modulation) return;
     this.modulation.reset();
@@ -88,6 +103,7 @@ export class NeuralBrushApp {
     this.brainWorker.setModulation(this.modulation.snapshot());
     this.flyController = new FlyController();
     this.state.resetRuntime();
+    this.resetSensoryFeedback();
     this.state.setBrainStatus('ready');
   }
 
@@ -160,11 +176,19 @@ export class NeuralBrushApp {
 
       const snapshot = this.state.getSnapshot();
       if (snapshot.brainStatus === 'ready') {
-        this.sendLocalSensory(snapshot.fly.x, snapshot.fly.y);
+        let fly = snapshot.fly;
         if (dtSeconds > 0) {
-          this.state.setFly(
-            this.flyController.step(snapshot.behavior, dtSeconds),
-          );
+          fly = this.flyController.step(snapshot.behavior, dtSeconds);
+          this.state.setFly(fly);
+        }
+
+        if (snapshot.imageName !== null) {
+          const brushFrame = mapFlyToBrush(fly, snapshot.behavior, this.brushMode);
+          this.canvasPanel.applyBrush(brushFrame, this.brushMode);
+
+          if (this.sensoryCadence.shouldSample(timeMs)) {
+            this.sendEditedSensory(fly.x, fly.y);
+          }
         }
       }
 
@@ -174,23 +198,31 @@ export class NeuralBrushApp {
     this.animationFrameId = requestAnimationFrame(frame);
   }
 
-  private sendLocalSensory(x: number, y: number): void {
-    if (!this.visionFrame || !this.engineGraph || !this.brainWorker) return;
+  private sendEditedSensory(x: number, y: number): void {
+    if (!this.engineGraph || !this.brainWorker) return;
 
-    const sample = LocalVision.sample(
-      this.visionFrame.pixels,
-      this.visionFrame.width,
-      this.visionFrame.height,
-      x,
-      y,
-      VISION_RADIUS_PX,
-    );
+    const patch = this.canvasPanel.readEditedPatch(x, y, VISION_RADIUS_PX);
+    if (!patch) return;
+
+    const previous =
+      this.previousEditedPatch &&
+      this.previousEditedPatch.width === patch.width &&
+      this.previousEditedPatch.height === patch.height
+        ? this.previousEditedPatch
+        : undefined;
+    const sample = sampleEditedPatch(patch, previous);
     const drive = SensoryAdapter.map(
       sample,
       this.engineGraph.inputPorts,
       this.engineGraph.nodeCount,
     );
+    this.previousEditedPatch = patch;
     this.brainWorker.sendSensory(drive);
+  }
+
+  private resetSensoryFeedback(): void {
+    this.previousEditedPatch = null;
+    this.sensoryCadence.reset();
   }
 
   private pauseBrain(): void {
