@@ -137,7 +137,9 @@ if (length(missing_seed_types) > 0) {
 
 turn_left <- seed_roles$bodyId[seed_roles$somaSide == 'L']
 turn_right <- seed_roles$bodyId[seed_roles$somaSide == 'R']
-forward <- seed_roles$bodyId
+# DNa01/DNa02 are evidence-backed steering readouts. V1 intentionally leaves
+# forward empty until a separate forward-speed readout is selected and verified.
+forward <- character(0)
 
 if (length(turn_left) == 0 || length(turn_right) == 0) {
   stop('Could not verify both left and right DNa01/DNa02 seed groups from source somaSide metadata')
