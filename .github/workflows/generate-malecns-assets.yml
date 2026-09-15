@@ -16,13 +16,15 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   generate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: feature/malecns-data-pipeline
 
       - uses: actions/setup-python@v5
         with:
@@ -104,6 +106,23 @@ jobs:
           if (totalBytes > 10 * 1024 * 1024) throw new Error(`Payload exceeds 10 MiB: ${totalBytes}`);
           console.log(`Validated ${manifest.neuronCount} neurons, ${manifest.edgeCount} edges, ${totalBytes} bytes`);
           NODE
+
+      - name: Commit verified compact runtime assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add \
+            public/data/male-cns-v1/circuit.bin \
+            public/data/male-cns-v1/metadata.json \
+            public/data/male-cns-v1/manifest.json
+          if git diff --cached --quiet; then
+            echo 'Compact MaleCNS assets already match the verified output.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'data: add verified MaleCNS v1 compact circuit assets'
+          git push origin HEAD:feature/malecns-data-pipeline
 
       - name: Upload auditable MaleCNS assets
         uses: actions/upload-artifact@v4
