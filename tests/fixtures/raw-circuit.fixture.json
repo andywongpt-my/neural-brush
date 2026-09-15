@@ -1,0 +1,50 @@
+{
+  "dataset": "male-cns:v1.0",
+  "circuit": "dna-steering-v1",
+  "selection": {
+    "dataset": "male-cns:v1.0",
+    "circuit": "dna-steering-v1",
+    "seedTypes": ["DNa01", "DNa02"],
+    "firstHop": { "partners": "inputs", "threshold": 5, "maxPartners": 64 },
+    "secondHop": { "partners": "inputs", "threshold": 10, "maxPartners": 96 },
+    "internalEdgeThreshold": 1
+  },
+  "neurons": [
+    {
+      "bodyId": "300",
+      "type": "DNa02",
+      "instance": "DNa02_R",
+      "somaSide": "R",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": true
+    },
+    {
+      "bodyId": "100",
+      "type": "input-test",
+      "instance": "input-test_L",
+      "somaSide": "L",
+      "neurotransmitter": null,
+      "inputPort": true,
+      "descendingSeed": false
+    },
+    {
+      "bodyId": "200",
+      "type": "DNa01",
+      "instance": "DNa01_L",
+      "somaSide": "L",
+      "neurotransmitter": "acetylcholine",
+      "inputPort": false,
+      "descendingSeed": true
+    }
+  ],
+  "edges": [
+    { "source": "200", "target": "300", "weight": 7 },
+    { "source": "100", "target": "200", "weight": 12 }
+  ],
+  "behaviorPorts": {
+    "turnLeft": ["200"],
+    "turnRight": ["300"],
+    "forward": ["200", "300"]
+  }
+}
