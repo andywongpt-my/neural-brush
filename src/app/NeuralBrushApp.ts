@@ -11,8 +11,7 @@ export class NeuralBrushApp {
   constructor(private readonly host: HTMLElement) {}
 
   mount(): void {
-    let splitView: SplitView;
-    splitView = new SplitView({
+    const splitView = new SplitView({
       initialRatio: this.state.getSnapshot().splitRatio,
       onRatioChange: (ratio) => {
         this.state.setSplitRatio(ratio);
