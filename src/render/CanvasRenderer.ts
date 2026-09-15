@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { AppError } from '../app/AppError';
 import { BrushPipeline } from '../brush/BrushPipeline';
 import type { BrushFrame, BrushMode } from '../brush/BrushTypes';
+import { FlyRenderer } from '../fly/FlyRenderer';
+import type { FlyState } from '../fly/FlyTypes';
 import {
   readEditedPatch as readTargetPatch,
   type ImageDataLike,
@@ -15,6 +17,7 @@ export class CanvasRenderer {
   private readonly plane = new THREE.Mesh(this.geometry, this.material);
   private readonly renderer: THREE.WebGLRenderer;
   private readonly brushPipeline: BrushPipeline;
+  private readonly flyRenderer: FlyRenderer;
   private sourceTexture: THREE.Texture | null = null;
   private imageWidth = 0;
   private imageHeight = 0;
@@ -35,11 +38,16 @@ export class CanvasRenderer {
     }
 
     this.brushPipeline = new BrushPipeline(this.renderer);
+    this.flyRenderer = new FlyRenderer(this.scene);
     this.renderer.setClearColor(0x080b0d, 1);
     this.renderer.domElement.className = 'photo-canvas';
     this.renderer.domElement.setAttribute('aria-label', 'Photo canvas');
     this.renderer.domElement.setAttribute('role', 'img');
     host.replaceChildren(this.renderer.domElement);
+  }
+
+  get canvasElement(): HTMLCanvasElement {
+    return this.renderer.domElement;
   }
 
   setImage(bitmap: ImageBitmap): void {
@@ -64,6 +72,30 @@ export class CanvasRenderer {
     this.brushPipeline.apply(frame, mode);
     this.material.map = this.brushPipeline.texture;
     this.render();
+  }
+
+  updateFly(state: FlyState): void {
+    this.flyRenderer.update(state);
+    this.render();
+  }
+
+  clientToPhotoNormalized(clientX: number, clientY: number): { x: number; y: number } | null {
+    if (!this.sourceTexture || this.plane.scale.x <= 0 || this.plane.scale.y <= 0) {
+      return null;
+    }
+    if (!Number.isFinite(clientX) || !Number.isFinite(clientY)) {
+      throw new RangeError('pointer coordinates must be finite');
+    }
+
+    const rect = this.renderer.domElement.getBoundingClientRect();
+    const photoWidth = this.plane.scale.x;
+    const photoHeight = this.plane.scale.y;
+    const photoLeft = rect.left + (this.viewportWidth - photoWidth) / 2;
+    const photoTop = rect.top + (this.viewportHeight - photoHeight) / 2;
+    return {
+      x: Math.min(1, Math.max(0, (clientX - photoLeft) / photoWidth)),
+      y: Math.min(1, Math.max(0, (clientY - photoTop) / photoHeight)),
+    };
   }
 
   readEditedPatch(
@@ -111,6 +143,7 @@ export class CanvasRenderer {
   }
 
   dispose(): void {
+    this.flyRenderer.dispose();
     this.brushPipeline.dispose();
     this.sourceTexture?.dispose();
     this.sourceTexture = null;
@@ -123,6 +156,7 @@ export class CanvasRenderer {
   private fitPhoto(): void {
     if (this.imageWidth <= 0 || this.imageHeight <= 0) {
       this.plane.scale.set(1, 1, 1);
+      this.flyRenderer.setPhotoSize(0, 0);
       return;
     }
 
@@ -130,7 +164,10 @@ export class CanvasRenderer {
       this.viewportWidth / this.imageWidth,
       this.viewportHeight / this.imageHeight,
     );
-    this.plane.scale.set(this.imageWidth * scale, this.imageHeight * scale, 1);
+    const width = this.imageWidth * scale;
+    const height = this.imageHeight * scale;
+    this.plane.scale.set(width, height, 1);
+    this.flyRenderer.setPhotoSize(width, height);
   }
 
   private render(): void {
