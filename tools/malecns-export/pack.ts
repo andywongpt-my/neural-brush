@@ -6,6 +6,7 @@ import {
   type CircuitNeuron,
   type SomaSide,
 } from '../../src/brain/CircuitTypes';
+import { sha256Hex } from './hash';
 
 const CIRCUIT_ID = 'dna-steering-v1' as const;
 const MAGIC = 'NBC1';
@@ -51,6 +52,13 @@ export interface PackedCircuit {
   metadata: CircuitMetadata;
   binary: Uint8Array;
   manifestBase: ManifestBase;
+}
+
+export interface AssetBundle {
+  metadataText: string;
+  manifest: CircuitManifest;
+  manifestText: string;
+  binary: Uint8Array;
 }
 
 function assertBodyId(bodyId: string): void {
@@ -184,4 +192,22 @@ export function packCircuit(raw: RawCircuit): PackedCircuit {
   };
 
   return { metadata, binary, manifestBase };
+}
+
+export function buildAssetBundle(
+  raw: RawCircuit,
+  rawText: string,
+  generatedAt: string,
+): AssetBundle {
+  const { metadata, binary, manifestBase } = packCircuit(raw);
+  const metadataText = `${JSON.stringify(metadata, null, 2)}\n`;
+  const manifest: CircuitManifest = {
+    ...manifestBase,
+    generatedAt,
+    rawSha256: sha256Hex(rawText),
+    binarySha256: sha256Hex(binary),
+  };
+  const manifestText = `${JSON.stringify(manifest, null, 2)}\n`;
+
+  return { metadataText, manifest, manifestText, binary };
 }
