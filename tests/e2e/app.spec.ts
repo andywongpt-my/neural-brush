@@ -17,3 +17,17 @@ test('loads a local image into the Three.js canvas', async ({ page }) => {
   await expect(page.getByText('test-image.png')).toBeVisible();
   await expect(page.locator('canvas.photo-canvas')).toBeVisible();
 });
+
+test('keeps the previous valid image when a later file is rejected', async ({ page }) => {
+  await page.goto('/');
+  const picker = page.getByLabel('Choose photo');
+
+  await picker.setInputFiles('tests/fixtures/test-image.png');
+  await expect(page.getByText('test-image.png')).toBeVisible();
+
+  await picker.setInputFiles('tests/fixtures/unsupported.gif');
+
+  await expect(page.getByText('test-image.png')).toBeVisible();
+  await expect(page.getByRole('alert')).toContainText('valid PNG, JPEG, or WebP');
+  await expect(page.locator('canvas.photo-canvas')).toBeVisible();
+});
