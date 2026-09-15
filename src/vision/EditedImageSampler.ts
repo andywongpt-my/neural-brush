@@ -1,3 +1,5 @@
+import { LocalVision, type SensorySample } from './LocalVision';
+
 export interface ReadbackRect {
   x: number;
   y: number;
@@ -86,4 +88,30 @@ export function flipReadbackRows(
     );
   }
   return topDown;
+}
+
+export function sampleEditedPatch(
+  current: ImageDataLike,
+  previous?: ImageDataLike,
+): SensorySample {
+  validateDimension('current.width', current.width);
+  validateDimension('current.height', current.height);
+
+  let previousPixels: Uint8ClampedArray | undefined;
+  if (previous) {
+    if (previous.width !== current.width || previous.height !== current.height) {
+      throw new RangeError('previous edited patch dimensions must match current patch');
+    }
+    previousPixels = previous.data;
+  }
+
+  return LocalVision.sample(
+    current.data,
+    current.width,
+    current.height,
+    0.5,
+    0.5,
+    Math.max(current.width, current.height),
+    previousPixels,
+  );
 }
