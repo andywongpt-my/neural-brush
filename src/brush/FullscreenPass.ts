@@ -5,7 +5,10 @@ export class FullscreenPass {
   private readonly camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
   private readonly geometry = new THREE.PlaneGeometry(2, 2);
   private readonly placeholderMaterial = new THREE.MeshBasicMaterial();
-  private readonly quad = new THREE.Mesh(this.geometry, this.placeholderMaterial);
+  private readonly quad = new THREE.Mesh<THREE.PlaneGeometry, THREE.Material>(
+    this.geometry,
+    this.placeholderMaterial,
+  );
   private disposed = false;
 
   constructor(private readonly renderer: THREE.WebGLRenderer) {
