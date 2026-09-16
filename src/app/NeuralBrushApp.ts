@@ -59,6 +59,7 @@ export class NeuralBrushApp {
     onPause: () => this.pauseBrain(),
     onResume: () => this.resumeBrain(),
     onReset: () => this.resetBrain(),
+    onRestart: () => this.restartBrain(),
     onStimulate: (bodyId, value) => this.stimulateNeuron(bodyId, value),
     onInhibit: (bodyId, value) => this.inhibitNeuron(bodyId, value),
     onConnectionGain: (edgeIndex, value) => this.setConnectionGain(edgeIndex, value),
@@ -224,22 +225,7 @@ export class NeuralBrushApp {
         }
       }
 
-      const worker = new BrainWorkerClient();
-
-      worker.onReady(() => {
-        if (this.disposed) return;
-        this.state.clearBrainError();
-        this.state.setBrainStatus('ready');
-      });
-      worker.onState(({ activation, behavior }) => {
-        if (this.disposed) return;
-        this.state.setBrainActivation(activation);
-        this.state.setBehavior(behavior);
-      });
-      worker.onError(({ message }) => {
-        if (this.disposed) return;
-        this.state.setBrainError(message);
-      });
+      const worker = this.createBrainWorker();
 
       this.circuit = circuit;
       this.engineGraph = engineGraph;
@@ -358,6 +344,58 @@ export class NeuralBrushApp {
     this.brainWorker.resume();
     this.lastFrameTimeMs = null;
     this.state.setBrainStatus('ready');
+  }
+
+  private restartBrain(): void {
+    if (!this.engineGraph || !this.modulation || this.disposed) return;
+
+    const previousWorker = this.brainWorker;
+    this.brainWorker = null;
+    if (previousWorker) {
+      try {
+        previousWorker.dispose();
+      } catch {
+        // A fatally crashed Worker may reject lifecycle messages during disposal.
+      }
+    }
+
+    const worker = this.createBrainWorker();
+    this.brainWorker = worker;
+    this.state.clearBrainError();
+    this.state.setBrainStatus('loading');
+    this.state.setBrainActivation(null);
+    this.state.setBehavior({ turn: 0, forward: 0, dwell: 1, arousal: 0 });
+    this.resetSensoryFeedback();
+    this.lastFrameTimeMs = null;
+
+    const modulation = this.modulation.snapshot();
+    try {
+      worker.init(this.engineGraph, this.brainSeed);
+      worker.setModulation(modulation);
+    } catch (cause) {
+      this.state.setBrainError(
+        this.errorMessage('Unable to restart neural runtime', cause),
+      );
+    }
+  }
+
+  private createBrainWorker(): BrainWorkerClient {
+    const worker = new BrainWorkerClient();
+    worker.onReady(() => {
+      if (this.disposed || this.brainWorker !== worker) return;
+      this.state.clearBrainError();
+      this.state.setBrainStatus('ready');
+    });
+    worker.onState(({ activation, behavior }) => {
+      if (this.disposed || this.brainWorker !== worker) return;
+      this.state.setBrainActivation(activation);
+      this.state.setBehavior(behavior);
+    });
+    worker.onError(({ message }) => {
+      if (this.disposed || this.brainWorker !== worker) return;
+      this.state.setBrainError(message);
+    });
+    return worker;
   }
 
   private shareBrainPreset(): string {
