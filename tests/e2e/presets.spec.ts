@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises';
 import { expect, test, type Page } from '@playwright/test';
 
 async function selectNeuronByType(page: Page, type: string): Promise<void> {
@@ -52,6 +53,50 @@ test('shares and restores a Brain Preset without restoring the source image', as
   await selectNeuronByType(restored, 'DNa01');
   await expect(restored.getByRole('slider', { name: 'Stimulation' })).toHaveValue('0.37');
   await expect(restored.getByRole('slider', { name: 'Connection modulation' })).toHaveValue('0.63');
+});
+
+test('exports, resets, and imports the same Brain Preset without photo data', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByText('MaleCNS circuit: brain ready')).toBeVisible({ timeout: 10_000 });
+  await page.getByLabel('Choose photo').setInputFiles('tests/fixtures/brush-image.png');
+  await expect(page.getByText('brush-image.png')).toBeVisible();
+
+  await selectNeuronByType(page, 'DNa01');
+  await setRange(page, 'Stimulation', '0.44');
+  await setRange(page, 'Connection modulation', '1.27');
+
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Export Brain' }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe('neural-brush-preset.neuralbrush.json');
+  const downloadPath = await download.path();
+  expect(downloadPath).not.toBeNull();
+
+  const exportedText = await readFile(downloadPath!, 'utf8');
+  expect(exportedText).not.toContain('brush-image.png');
+  expect(exportedText).not.toContain('imageName');
+  const exportedJson = JSON.parse(exportedText) as Record<string, unknown>;
+  expect(Object.keys(exportedJson).sort()).toEqual([
+    'brush',
+    'circuit',
+    'dataset',
+    'gains',
+    'modulation',
+    'schema',
+    'seed',
+  ]);
+
+  await page.getByRole('button', { name: 'Reset Brain' }).click();
+  await expect(page.getByRole('slider', { name: 'Stimulation' })).toHaveValue('0');
+  await expect(page.getByRole('slider', { name: 'Connection modulation' })).toHaveValue('1');
+  await expect(page.getByText('brush-image.png')).toBeVisible();
+
+  await page.getByLabel('Import Brain file').setInputFiles(downloadPath!);
+  await expect(page.getByText('MaleCNS circuit: brain ready')).toBeVisible({ timeout: 10_000 });
+  await selectNeuronByType(page, 'DNa01');
+  await expect(page.getByRole('slider', { name: 'Stimulation' })).toHaveValue('0.44');
+  await expect(page.getByRole('slider', { name: 'Connection modulation' })).toHaveValue('1.27');
+  await expect(page.getByText('brush-image.png')).toBeVisible();
 });
 
 test('invalid shared preset warns, can be dismissed, and leaves a neutral usable brain', async ({
