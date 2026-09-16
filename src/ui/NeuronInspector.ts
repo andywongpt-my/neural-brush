@@ -1,4 +1,5 @@
 import type { CircuitGraph } from '../brain/CircuitGraph';
+import type { ModulationSnapshot } from '../brain/BrainRuntimeTypes';
 
 export interface NeuronInspectorControls {
   onStimulate(bodyId: string, value: number): void;
@@ -10,6 +11,10 @@ interface InspectorState {
   stimulation: Map<string, number>;
   inhibition: Map<string, number>;
   gains: Map<number, number>;
+}
+
+function displayValue(value: number): number {
+  return Number(value.toFixed(6));
 }
 
 export class NeuronInspector {
@@ -43,6 +48,32 @@ export class NeuronInspector {
     }
     this.selectedNeuronIndex = index;
     this.selectedEdgeIndex = null;
+    this.render();
+  }
+
+  syncModulation(snapshot: ModulationSnapshot): void {
+    if (
+      snapshot.stimulation.length !== this.graph.metadata.neurons.length ||
+      snapshot.inhibition.length !== this.graph.metadata.neurons.length ||
+      snapshot.connectionGain.length !== this.graph.edges.length
+    ) {
+      throw new RangeError('modulation snapshot dimensions do not match inspector graph');
+    }
+
+    this.state.stimulation.clear();
+    this.state.inhibition.clear();
+    this.state.gains.clear();
+
+    this.graph.metadata.neurons.forEach((neuron, index) => {
+      const stimulation = displayValue(snapshot.stimulation[index] ?? 0);
+      const inhibition = displayValue(snapshot.inhibition[index] ?? 0);
+      if (stimulation > 0) this.state.stimulation.set(neuron.bodyId, stimulation);
+      if (inhibition > 0) this.state.inhibition.set(neuron.bodyId, inhibition);
+    });
+    this.graph.edges.forEach((_edge, edgeIndex) => {
+      const gain = displayValue(snapshot.connectionGain[edgeIndex] ?? 1);
+      if (gain !== 1) this.state.gains.set(edgeIndex, gain);
+    });
     this.render();
   }
 
