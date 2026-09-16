@@ -1,10 +1,19 @@
 import { APP_NAME } from '../app/constants';
 import { AppState, type AppSnapshot } from '../app/AppState';
+import type { CircuitGraph } from '../brain/CircuitGraph';
+import { BrainRenderCadence } from '../brain/BrainRenderCadence';
+import { BrainRenderer } from '../brain/BrainRenderer';
+import { NeuronInspector } from './NeuronInspector';
+
+const BRAIN_RENDER_HZ = 12;
 
 export interface BrainPanelControls {
   onPause(): void;
   onResume(): void;
   onReset(): void;
+  onStimulate(bodyId: string, value: number): void;
+  onInhibit(bodyId: string, value: number): void;
+  onConnectionGain(edgeIndex: number, value: number): void;
 }
 
 function formatMetric(value: number): string {
@@ -28,6 +37,14 @@ function statusLabel(snapshot: AppSnapshot): string {
 
 export class BrainPanel {
   private unsubscribe: (() => void) | null = null;
+  private graphHost: HTMLElement | null = null;
+  private inspectorHost: HTMLElement | null = null;
+  private circuit: CircuitGraph | null = null;
+  private renderer: BrainRenderer | null = null;
+  private inspector: NeuronInspector | null = null;
+  private readonly brainRenderCadence = new BrainRenderCadence(BRAIN_RENDER_HZ);
+  private lastRenderedActivationRevision = -1;
+  private lastRenderedPresentationRevision = -1;
 
   constructor(
     private readonly state: AppState,
@@ -36,6 +53,12 @@ export class BrainPanel {
 
   mount(host: HTMLElement): void {
     this.unsubscribe?.();
+    this.renderer?.dispose();
+    this.renderer = null;
+    this.inspector = null;
+    this.brainRenderCadence.reset();
+    this.lastRenderedActivationRevision = -1;
+    this.lastRenderedPresentationRevision = -1;
 
     const header = document.createElement('header');
     header.className = 'panel-header';
@@ -83,11 +106,22 @@ export class BrainPanel {
       metricElements.arousal.root,
     );
 
+    const workspace = document.createElement('div');
+    workspace.className = 'brain-workspace';
+
     const graphHost = document.createElement('div');
     graphHost.className = 'brain-graph-host';
     graphHost.setAttribute('aria-label', 'Brain graph workspace');
+    graphHost.textContent = 'Waiting for MaleCNS circuit…';
+    this.graphHost = graphHost;
 
-    host.replaceChildren(header, status, error, metrics, graphHost);
+    const inspectorHost = document.createElement('aside');
+    inspectorHost.className = 'brain-inspector-host';
+    inspectorHost.setAttribute('aria-label', 'Neuron inspector');
+    this.inspectorHost = inspectorHost;
+
+    workspace.append(graphHost, inspectorHost);
+    host.replaceChildren(header, status, error, metrics, workspace);
 
     runButton.addEventListener('click', () => {
       const snapshot = this.state.getSnapshot();
@@ -97,36 +131,99 @@ export class BrainPanel {
     resetButton.addEventListener('click', () => this.controls.onReset());
 
     const render = (snapshot: AppSnapshot): void => {
-      status.textContent = statusLabel(snapshot);
-      error.textContent = snapshot.brainError ?? '';
-      error.hidden = snapshot.brainError === null;
+      if (
+        snapshot.brainPresentationRevision !==
+        this.lastRenderedPresentationRevision
+      ) {
+        status.textContent = statusLabel(snapshot);
+        error.textContent = snapshot.brainError ?? '';
+        error.hidden = snapshot.brainError === null;
 
-      runButton.textContent = snapshot.brainStatus === 'paused' ? 'Resume' : 'Pause';
-      runButton.disabled = !['ready', 'paused'].includes(snapshot.brainStatus);
-      resetButton.disabled = !['ready', 'paused'].includes(snapshot.brainStatus);
+        runButton.textContent =
+          snapshot.brainStatus === 'paused' ? 'Resume' : 'Pause';
+        runButton.disabled = !['ready', 'paused'].includes(snapshot.brainStatus);
+        resetButton.disabled = !['ready', 'paused'].includes(snapshot.brainStatus);
 
-      metricElements.turn.value.textContent = formatMetric(snapshot.behavior.turn);
-      metricElements.forward.value.textContent = formatMetric(snapshot.behavior.forward);
-      metricElements.dwell.value.textContent = formatMetric(snapshot.behavior.dwell);
-      metricElements.arousal.value.textContent = formatMetric(snapshot.behavior.arousal);
+        metricElements.turn.value.textContent = formatMetric(snapshot.behavior.turn);
+        metricElements.forward.value.textContent = formatMetric(snapshot.behavior.forward);
+        metricElements.dwell.value.textContent = formatMetric(snapshot.behavior.dwell);
+        metricElements.arousal.value.textContent = formatMetric(snapshot.behavior.arousal);
+        this.lastRenderedPresentationRevision =
+          snapshot.brainPresentationRevision;
+      }
 
       const activation = snapshot.brainActivation;
-      if (!activation || activation.length === 0) {
-        graphHost.textContent = 'Waiting for neural activity…';
-      } else {
-        let total = 0;
-        for (const value of activation) total += value;
-        graphHost.textContent = `${activation.length} neurons · mean simulated activity ${(total / activation.length).toFixed(3)}`;
+      if (
+        this.renderer &&
+        activation !== null &&
+        activation.length === this.circuit?.metadata.neurons.length &&
+        snapshot.brainActivationRevision !== this.lastRenderedActivationRevision &&
+        this.brainRenderCadence.shouldRender(performance.now())
+      ) {
+        this.renderer.updateActivation(activation);
+        this.lastRenderedActivationRevision = snapshot.brainActivationRevision;
       }
     };
 
     render(this.state.getSnapshot());
     this.unsubscribe = this.state.subscribe(render);
+    this.initializeGraph();
+  }
+
+  setCircuit(circuit: CircuitGraph): void {
+    this.circuit = circuit;
+    this.initializeGraph();
+  }
+
+  resetModulationControls(): void {
+    this.inspector?.reset();
   }
 
   dispose(): void {
     this.unsubscribe?.();
     this.unsubscribe = null;
+    this.renderer?.dispose();
+    this.renderer = null;
+    this.inspector = null;
+    this.graphHost = null;
+    this.inspectorHost = null;
+    this.brainRenderCadence.reset();
+    this.lastRenderedActivationRevision = -1;
+    this.lastRenderedPresentationRevision = -1;
+  }
+
+  private initializeGraph(): void {
+    if (!this.circuit || !this.graphHost || !this.inspectorHost) return;
+
+    this.renderer?.dispose();
+    this.brainRenderCadence.reset();
+    this.lastRenderedActivationRevision = -1;
+    const inspector = new NeuronInspector(
+      this.circuit,
+      {
+        onStimulate: (bodyId, value) => this.controls.onStimulate(bodyId, value),
+        onInhibit: (bodyId, value) => this.controls.onInhibit(bodyId, value),
+        onConnectionGain: (edgeIndex, value) =>
+          this.controls.onConnectionGain(edgeIndex, value),
+      },
+      (index) => this.renderer?.select(index),
+    );
+    inspector.mount(this.inspectorHost);
+
+    const renderer = new BrainRenderer(this.graphHost, this.circuit, (index) => {
+      inspector.selectNeuron(index);
+    });
+    renderer.select(0);
+    const snapshot = this.state.getSnapshot();
+    const activation = snapshot.brainActivation;
+    if (activation?.length === this.circuit.metadata.neurons.length) {
+      renderer.updateActivation(activation);
+      this.lastRenderedActivationRevision = snapshot.brainActivationRevision;
+      this.brainRenderCadence.shouldRender(performance.now());
+    }
+
+    this.inspector = inspector;
+    this.renderer = renderer;
   }
 
   private createMetric(label: string, testId: string): { root: HTMLElement; value: HTMLElement } {
