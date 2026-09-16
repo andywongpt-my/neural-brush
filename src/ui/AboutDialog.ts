@@ -1,3 +1,5 @@
+import './AboutDialog.css';
+
 export class AboutDialog {
   private trigger: HTMLButtonElement | null = null;
   private dialog: HTMLDialogElement | null = null;
