@@ -1,6 +1,11 @@
 import { AppError } from '../app/AppError';
 import { AppState } from '../app/AppState';
 import type { BrushFrame, BrushMode } from '../brush/BrushTypes';
+import {
+  PROCESS_RECORDING_FILENAME,
+  ProcessRecorder,
+  ProcessRecorderError,
+} from '../export/ProcessRecorder';
 import { FlyPointerInteraction } from '../fly/FlyPointerInteraction';
 import type { FlyState } from '../fly/FlyTypes';
 import { ImageLoader } from '../image/ImageLoader';
@@ -22,6 +27,8 @@ export class CanvasPanel {
   private bitmap: ImageBitmap | null = null;
   private pointerInteraction: FlyPointerInteraction | null = null;
   private pointerCleanup: (() => void) | null = null;
+  private readonly processRecorder = new ProcessRecorder();
+  private recordedProcessBlob: Blob | null = null;
 
   constructor(
     private readonly state: AppState,
@@ -59,7 +66,29 @@ export class CanvasPanel {
     exportJPEGButton.textContent = 'Export JPEG';
     exportJPEGButton.disabled = true;
 
-    actionHost.append(autonomousButton, exportPNGButton, exportJPEGButton);
+    const recordButton = document.createElement('button');
+    recordButton.type = 'button';
+    recordButton.textContent = 'Record Process';
+    recordButton.disabled = true;
+
+    const stopRecordingButton = document.createElement('button');
+    stopRecordingButton.type = 'button';
+    stopRecordingButton.textContent = 'Stop Recording';
+    stopRecordingButton.disabled = true;
+
+    const downloadRecordingButton = document.createElement('button');
+    downloadRecordingButton.type = 'button';
+    downloadRecordingButton.textContent = 'Download Recording';
+    downloadRecordingButton.disabled = true;
+
+    actionHost.append(
+      autonomousButton,
+      exportPNGButton,
+      exportJPEGButton,
+      recordButton,
+      stopRecordingButton,
+      downloadRecordingButton,
+    );
     header.append(identity, actionHost);
 
     const uploadHost = document.createElement('div');
@@ -83,12 +112,16 @@ export class CanvasPanel {
     imageName.className = 'image-name';
     imageName.textContent = 'No photo loaded';
 
+    const recordingStatus = document.createElement('p');
+    recordingStatus.className = 'recording-status';
+    recordingStatus.setAttribute('aria-live', 'polite');
+
     const error = document.createElement('p');
     error.className = 'image-error';
     error.setAttribute('role', 'alert');
     error.hidden = true;
 
-    uploadHost.append(label, dropHint, imageName, error);
+    uploadHost.append(label, dropHint, imageName, recordingStatus, error);
 
     const threeHost = document.createElement('div');
     threeHost.className = 'three-canvas-host';
@@ -96,10 +129,19 @@ export class CanvasPanel {
 
     host.replaceChildren(header, uploadHost, threeHost);
 
+    if (this.processRecorder.isRecording) {
+      void this.processRecorder.stop().catch(() => undefined);
+    }
+    this.recordedProcessBlob = null;
     this.renderer?.dispose();
     this.resizeObserver?.disconnect();
     this.pointerCleanup?.();
     this.renderer = new CanvasRenderer(threeHost);
+    const recordingSupported = ProcessRecorder.isSupported(this.renderer.canvasElement);
+    recordingStatus.textContent = recordingSupported
+      ? 'WebM process recording is available.'
+      : 'WebM process recording is not supported by this browser. PNG/JPEG export is still available.';
+
     this.resizeObserver = new ResizeObserver(([entry]) => {
       if (!entry || !this.renderer) return;
       const { width, height } = entry.contentRect;
@@ -117,6 +159,9 @@ export class CanvasPanel {
           error,
           exportPNGButton,
           exportJPEGButton,
+          recordButton,
+          downloadRecordingButton,
+          recordingSupported,
         );
       }
     });
@@ -135,6 +180,9 @@ export class CanvasPanel {
           error,
           exportPNGButton,
           exportJPEGButton,
+          recordButton,
+          downloadRecordingButton,
+          recordingSupported,
         );
       }
     });
@@ -144,6 +192,49 @@ export class CanvasPanel {
     });
     exportJPEGButton.addEventListener('click', () => {
       void this.exportArtwork('jpeg', error);
+    });
+
+    recordButton.addEventListener('click', () => {
+      if (!this.renderer?.hasImage) return;
+      try {
+        this.processRecorder.start(this.renderer.canvasElement);
+        this.recordedProcessBlob = null;
+        recordButton.disabled = true;
+        stopRecordingButton.disabled = false;
+        downloadRecordingButton.disabled = true;
+        recordingStatus.textContent = 'Recording process…';
+        error.hidden = true;
+        error.textContent = '';
+      } catch (cause) {
+        this.showRecordingError(cause, error);
+      }
+    });
+
+    stopRecordingButton.addEventListener('click', () => {
+      stopRecordingButton.disabled = true;
+      void this.processRecorder
+        .stop()
+        .then((blob) => {
+          if (blob.size <= 0) {
+            throw new ProcessRecorderError('process recording produced no video data');
+          }
+          this.recordedProcessBlob = blob;
+          recordButton.disabled = !recordingSupported || !this.renderer?.hasImage;
+          downloadRecordingButton.disabled = false;
+          recordingStatus.textContent = 'Recording ready to download.';
+          error.hidden = true;
+          error.textContent = '';
+        })
+        .catch((cause: unknown) => {
+          recordButton.disabled = !recordingSupported || !this.renderer?.hasImage;
+          downloadRecordingButton.disabled = true;
+          this.showRecordingError(cause, error);
+        });
+    });
+
+    downloadRecordingButton.addEventListener('click', () => {
+      if (!this.recordedProcessBlob) return;
+      this.downloadBlob(this.recordedProcessBlob, PROCESS_RECORDING_FILENAME);
     });
   }
 
@@ -179,6 +270,10 @@ export class CanvasPanel {
   }
 
   dispose(): void {
+    if (this.processRecorder.isRecording) {
+      void this.processRecorder.stop().catch(() => undefined);
+    }
+    this.recordedProcessBlob = null;
     this.pointerCleanup?.();
     this.pointerCleanup = null;
     this.pointerInteraction = null;
@@ -256,6 +351,9 @@ export class CanvasPanel {
     error: HTMLElement,
     exportPNGButton: HTMLButtonElement,
     exportJPEGButton: HTMLButtonElement,
+    recordButton: HTMLButtonElement,
+    downloadRecordingButton: HTMLButtonElement,
+    recordingSupported: boolean,
   ): Promise<void> {
     try {
       const nextBitmap = await ImageLoader.decode(file);
@@ -268,6 +366,9 @@ export class CanvasPanel {
       error.textContent = '';
       exportPNGButton.disabled = false;
       exportJPEGButton.disabled = false;
+      recordButton.disabled = !recordingSupported || this.processRecorder.isRecording;
+      this.recordedProcessBlob = null;
+      downloadRecordingButton.disabled = true;
       this.onImageChanged?.();
     } catch (cause) {
       const appError = cause instanceof AppError ? cause : new AppError('IMAGE_DECODE', cause);
@@ -295,6 +396,13 @@ export class CanvasPanel {
       error.textContent = appError.message;
       error.hidden = false;
     }
+  }
+
+  private showRecordingError(cause: unknown, error: HTMLElement): void {
+    const message =
+      cause instanceof Error ? cause.message : 'WebM process recording failed';
+    error.textContent = message;
+    error.hidden = false;
   }
 
   private downloadBlob(blob: Blob, filename: string): void {
