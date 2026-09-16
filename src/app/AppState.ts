@@ -12,6 +12,7 @@ export interface AppSnapshot {
   readonly fly: Readonly<FlyState>;
   readonly brainActivation: Float32Array | null;
   readonly brainActivationRevision: number;
+  readonly brainPresentationRevision: number;
 }
 
 type AppStateListener = (snapshot: AppSnapshot) => void;
@@ -41,6 +42,7 @@ export class AppState {
   private fly: FlyState = initialFly();
   private brainActivation: Float32Array | null = null;
   private brainActivationRevision = 0;
+  private brainPresentationRevision = 0;
   private readonly listeners = new Set<AppStateListener>();
 
   setSplitRatio(value: number): void {
@@ -55,22 +57,26 @@ export class AppState {
 
   setBrainStatus(status: BrainStatus): void {
     this.brainStatus = status;
+    this.brainPresentationRevision += 1;
     this.emit();
   }
 
   setBrainError(message: string): void {
     this.brainError = message;
     this.brainStatus = 'error';
+    this.brainPresentationRevision += 1;
     this.emit();
   }
 
   clearBrainError(): void {
     this.brainError = null;
+    this.brainPresentationRevision += 1;
     this.emit();
   }
 
   setBehavior(value: BehaviorState): void {
     this.behavior = { ...value };
+    this.brainPresentationRevision += 1;
     this.emit();
   }
 
@@ -91,6 +97,7 @@ export class AppState {
     this.fly = initialFly();
     this.brainActivation = null;
     this.brainActivationRevision += 1;
+    this.brainPresentationRevision += 1;
     this.emit();
   }
 
@@ -111,6 +118,7 @@ export class AppState {
       fly: { ...this.fly },
       brainActivation: this.brainActivation?.slice() ?? null,
       brainActivationRevision: this.brainActivationRevision,
+      brainPresentationRevision: this.brainPresentationRevision,
     };
   }
 
