@@ -31,8 +31,8 @@ test('renders the live MaleCNS graph with source facts separate from modulation 
   await expect(page.getByText('Dataset')).toBeVisible();
   await expect(page.getByText('Body ID')).toBeVisible();
   await expect(page.getByText('Neurotransmitter prediction')).toBeVisible();
-  await expect(page.getByLabel('Stimulation')).toBeVisible();
-  await expect(page.getByLabel('Inhibition')).toBeVisible();
+  await expect(page.getByRole('slider', { name: 'Stimulation' })).toBeVisible();
+  await expect(page.getByRole('slider', { name: 'Inhibition' })).toBeVisible();
 });
 
 test('loads a local image into the Three.js canvas while the brain remains ready', async ({ page }) => {
