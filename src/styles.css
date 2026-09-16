@@ -10,6 +10,10 @@
   box-sizing: border-box;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 html,
 body,
 #app {
@@ -33,7 +37,8 @@ button:focus-visible,
 .split-divider:focus-visible,
 .photo-picker:focus-within,
 select:focus-visible,
-input:focus-visible {
+input:focus-visible,
+summary:focus-visible {
   outline: 2px solid #8ed7d0;
   outline-offset: 2px;
 }
@@ -97,13 +102,76 @@ input:focus-visible {
   font-size: 0.85rem;
 }
 
-.panel-header button {
+.brain-controls,
+.canvas-actions,
+.preset-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.panel-header button,
+.preset-actions button {
   min-height: 44px;
   padding: 0 16px;
   color: #7d8a92;
   background: #171e23;
   border: 1px solid #2d3941;
   border-radius: 10px;
+}
+
+.canvas-brush-mode {
+  display: grid;
+  gap: 4px;
+  color: #9aa8b2;
+  font-size: 0.72rem;
+}
+
+.canvas-brush-mode select {
+  min-width: 108px;
+  min-height: 44px;
+  padding: 0 10px;
+  color: #eef3f5;
+  background: #171e23;
+  border: 1px solid #2d3941;
+  border-radius: 10px;
+}
+
+.preset-controls-host {
+  margin: 10px 0 14px;
+}
+
+.preset-share-link {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+  color: #9aa8b2;
+  font-size: 0.78rem;
+}
+
+.preset-share-link input {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 10px;
+  color: #eef3f5;
+  background: #0d1216;
+  border: 1px solid #2d3941;
+  border-radius: 8px;
+}
+
+.preset-warning {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 10px;
+  color: #ffd5b5;
+  background: #241b14;
+  border: 1px solid #68462f;
+  border-radius: 9px;
+  font-size: 0.78rem;
 }
 
 .brain-graph-host,
@@ -155,9 +223,18 @@ input:focus-visible {
   border-left: 1px solid #263139;
 }
 
-.inspector-section h3 {
-  margin: 0 0 12px;
+.inspector-section summary {
+  cursor: pointer;
+}
+
+.inspector-section summary h3 {
+  display: inline;
+  margin: 0;
   font-size: 0.9rem;
+}
+
+.inspector-section[open] summary {
+  margin-bottom: 12px;
 }
 
 .inspector-section dl {
@@ -277,7 +354,8 @@ input:focus-visible {
 }
 
 .image-name,
-.image-error {
+.image-error,
+.recording-status {
   margin: 0;
   font-size: 0.82rem;
 }
@@ -288,6 +366,10 @@ input:focus-visible {
 
 .image-error {
   color: #ffb7b7;
+}
+
+.recording-status {
+  color: #93a3ac;
 }
 
 .three-canvas-host {
@@ -371,6 +453,49 @@ input:focus-visible {
 
   .workspace-panel {
     padding: 14px;
+  }
+
+  .panel-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .brain-controls,
+  .canvas-actions,
+  .preset-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .brain-controls button,
+  .canvas-actions button,
+  .preset-actions button,
+  .canvas-brush-mode select,
+  .inspector-selector select,
+  .inspector-section summary {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .brain-controls button,
+  .canvas-actions button,
+  .preset-actions button {
+    width: 100%;
+    padding: 8px 10px;
+  }
+
+  .canvas-brush-mode {
+    grid-column: 1 / -1;
+  }
+
+  .canvas-brush-mode select {
+    width: 100%;
+  }
+
+  .inspector-section summary {
+    display: flex;
+    align-items: center;
   }
 
   .brain-graph-host,

@@ -9,6 +9,13 @@ import type { EngineGraph, ModulationSnapshot } from './BrainRuntimeTypes';
 type StateCallback = (state: BrainStateEvent) => void;
 type ErrorCallback = (error: BrainErrorEvent) => void;
 type ReadyCallback = () => void;
+type WorkerFactory = () => Worker;
+
+function defaultWorkerFactory(): Worker {
+  return new Worker(new URL('./BrainWorker.ts', import.meta.url), {
+    type: 'module',
+  });
+}
 
 function cloneGraph(graph: EngineGraph): EngineGraph {
   return {
@@ -38,10 +45,8 @@ export class BrainWorkerClient {
   private readonly readyCallbacks = new Set<ReadyCallback>();
   private disposed = false;
 
-  constructor() {
-    this.worker = new Worker(new URL('./BrainWorker.ts', import.meta.url), {
-      type: 'module',
-    });
+  constructor(workerFactory: WorkerFactory = defaultWorkerFactory) {
+    this.worker = workerFactory();
     this.worker.onmessage = (event: MessageEvent<unknown>) => {
       if (!isWorkerEvent(event.data)) return;
       switch (event.data.type) {
@@ -55,6 +60,15 @@ export class BrainWorkerClient {
           for (const callback of this.errorCallbacks) callback(event.data);
           break;
       }
+    };
+    this.worker.onerror = (event: ErrorEvent) => {
+      event.preventDefault();
+      this.emitFatal(
+        `Brain worker crashed: ${event.message || 'unknown worker error'}`,
+      );
+    };
+    this.worker.onmessageerror = () => {
+      this.emitFatal('Brain worker message could not be decoded');
     };
   }
 
@@ -110,12 +124,18 @@ export class BrainWorkerClient {
 
   dispose(): void {
     if (this.disposed) return;
-    this.worker.postMessage({ type: 'dispose' } satisfies WorkerCommand);
-    this.worker.terminate();
-    this.disposed = true;
-    this.stateCallbacks.clear();
-    this.errorCallbacks.clear();
-    this.readyCallbacks.clear();
+    this.worker.onmessage = null;
+    this.worker.onerror = null;
+    this.worker.onmessageerror = null;
+    try {
+      this.worker.postMessage({ type: 'dispose' } satisfies WorkerCommand);
+    } finally {
+      this.worker.terminate();
+      this.disposed = true;
+      this.stateCallbacks.clear();
+      this.errorCallbacks.clear();
+      this.readyCallbacks.clear();
+    }
   }
 
   onState(callback: StateCallback): () => void {
@@ -134,6 +154,11 @@ export class BrainWorkerClient {
     this.assertActive();
     this.readyCallbacks.add(callback);
     return () => this.readyCallbacks.delete(callback);
+  }
+
+  private emitFatal(message: string): void {
+    const event: BrainErrorEvent = { type: 'error', message };
+    for (const callback of this.errorCallbacks) callback(event);
   }
 
   private postLifecycle(command: WorkerCommand): void {

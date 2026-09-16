@@ -16,8 +16,8 @@ test('boots the Brain-first workspace with a live MaleCNS worker', async ({ page
   await page.goto('/');
 
   await expect(page.locator('#app')).toBeVisible();
-  await expect(page.getByRole('region', { name: 'Brain' })).toBeVisible();
-  await expect(page.getByRole('region', { name: 'Canvas' })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Brain', exact: true })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Canvas', exact: true })).toBeVisible();
   await expect(page.getByText('MaleCNS circuit: brain ready')).toBeVisible({ timeout: 10_000 });
   await expect(page.getByRole('button', { name: 'Pause' })).toBeEnabled();
   await expect(page.getByTestId('brain-turn')).toBeVisible();

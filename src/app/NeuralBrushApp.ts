@@ -11,12 +11,29 @@ import type { BrushMode } from '../brush/BrushTypes';
 import { FlyController } from '../fly/FlyController';
 import type { FlyState } from '../fly/FlyTypes';
 import { FrameStats, type FrameSummary } from '../perf/FrameStats';
+import type { BrainPresetV1 } from '../preset/BrainPreset';
+import {
+  PresetCodec,
+  readPresetFragment,
+  writePresetFragment,
+} from '../preset/PresetCodec';
+import {
+  PRESET_FILE_NAME,
+  createPresetFileBlob,
+  readPresetFile,
+} from '../preset/PresetFileIO';
+import {
+  applyPresetToModulation,
+  presetFromState,
+  validatePreset,
+} from '../preset/PresetValidation';
 import {
   sampleEditedPatch,
   type ImageDataLike,
 } from '../vision/EditedImageSampler';
 import { SensoryAdapter } from '../vision/SensoryAdapter';
 import { SensoryCadence } from '../vision/SensoryCadence';
+import { AboutDialog } from '../ui/AboutDialog';
 import { BrainPanel } from '../ui/BrainPanel';
 import { CanvasPanel } from '../ui/CanvasPanel';
 import { ErrorBanner } from '../ui/ErrorBanner';
@@ -39,13 +56,18 @@ interface DebugElements {
 export class NeuralBrushApp {
   private readonly state = new AppState();
   private readonly frameStats = new FrameStats();
+  private readonly aboutDialog = new AboutDialog();
   private readonly brainPanel = new BrainPanel(this.state, {
     onPause: () => this.pauseBrain(),
     onResume: () => this.resumeBrain(),
     onReset: () => this.resetBrain(),
+    onRestart: () => this.restartBrain(),
     onStimulate: (bodyId, value) => this.stimulateNeuron(bodyId, value),
     onInhibit: (bodyId, value) => this.inhibitNeuron(bodyId, value),
     onConnectionGain: (edgeIndex, value) => this.setConnectionGain(edgeIndex, value),
+    onSharePreset: () => this.shareBrainPreset(),
+    onExportPreset: () => this.exportBrainPreset(),
+    onImportPreset: (file) => this.importBrainPreset(file),
   });
   private readonly sensoryCadence = new SensoryCadence(SENSORY_RATE_HZ);
   private readonly canvasPanel = new CanvasPanel(
@@ -57,6 +79,7 @@ export class NeuralBrushApp {
       onDragEnd: () => this.endFlyDrag(),
       onFollowTarget: (x, y) => this.flyController.setFollowTarget(x, y),
       onAutonomous: () => this.flyController.clearFollowTarget(),
+      onBrushMode: (mode) => this.setBrushMode(mode),
     },
     () => this.resetSensoryFeedback(),
   );
@@ -67,6 +90,7 @@ export class NeuralBrushApp {
   private flyController = new FlyController();
   private previousEditedPatch: ImageDataLike | null = null;
   private brushMode: BrushMode = 'blend';
+  private brainSeed = DEFAULT_BRAIN_SEED;
   private animationFrameId: number | null = null;
   private lastFrameTimeMs: number | null = null;
   private lastDragTimeMs: number | null = null;
@@ -89,6 +113,7 @@ export class NeuralBrushApp {
       const { brainHost, canvasHost } = splitView.mount(this.host);
       this.brainPanel.mount(brainHost);
       this.canvasPanel.mount(canvasHost);
+      this.aboutDialog.mount(this.host);
       this.mountDebugPanel();
       this.startAnimationLoop();
       void this.initializeBrain();
@@ -120,6 +145,7 @@ export class NeuralBrushApp {
 
   setBrushMode(mode: BrushMode): void {
     this.brushMode = mode;
+    this.canvasPanel.setBrushMode(mode);
   }
 
   getEditedChecksum(): number | null {
@@ -146,7 +172,7 @@ export class NeuralBrushApp {
     this.modulation.reset();
     this.brainWorker.reset();
     this.brainWorker.setModulation(this.modulation.snapshot());
-    this.brainPanel.resetModulationControls();
+    this.brainPanel.syncModulationControls(this.modulation.snapshot());
     this.flyController = new FlyController();
     this.state.resetRuntime();
     this.canvasPanel.updateFly(this.flyController.state);
@@ -163,6 +189,7 @@ export class NeuralBrushApp {
     }
     this.brainWorker?.dispose();
     this.brainWorker = null;
+    this.aboutDialog.dispose();
     this.brainPanel.dispose();
     this.canvasPanel.dispose();
     this.debugElements?.root.remove();
@@ -184,29 +211,39 @@ export class NeuralBrushApp {
         engineGraph.nodeCount,
         engineGraph.weight.length,
       );
-      const worker = new BrainWorkerClient();
+      let presetWarning: string | null = null;
+      this.brainSeed = DEFAULT_BRAIN_SEED;
+      this.brushMode = 'blend';
 
-      worker.onReady(() => {
-        if (this.disposed) return;
-        this.state.clearBrainError();
-        this.state.setBrainStatus('ready');
-      });
-      worker.onState(({ activation, behavior }) => {
-        if (this.disposed) return;
-        this.state.setBrainActivation(activation);
-        this.state.setBehavior(behavior);
-      });
-      worker.onError(({ message }) => {
-        if (this.disposed) return;
-        this.state.setBrainError(message);
-      });
+      const fragment = readPresetFragment();
+      if (fragment) {
+        try {
+          const preset = validatePreset(PresetCodec.decode(fragment), circuit);
+          applyPresetToModulation(preset, circuit, modulation);
+          this.brainSeed = preset.seed;
+          this.brushMode = preset.brush;
+        } catch (cause) {
+          modulation.reset();
+          presetWarning = this.errorMessage(
+            'Unable to restore shared Brain preset',
+            cause,
+          );
+        }
+      }
+
+      const worker = this.createBrainWorker();
 
       this.circuit = circuit;
       this.engineGraph = engineGraph;
       this.modulation = modulation;
       this.brainWorker = worker;
       this.brainPanel.setCircuit(circuit);
-      worker.init(engineGraph, DEFAULT_BRAIN_SEED);
+      this.brainPanel.syncModulationControls(modulation.snapshot());
+      this.canvasPanel.setBrushMode(this.brushMode);
+      if (presetWarning) this.brainPanel.showPresetWarning(presetWarning);
+
+      worker.init(engineGraph, this.brainSeed);
+      worker.setModulation(modulation.snapshot());
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : String(cause);
       this.state.setBrainError(`Unable to start neural runtime: ${message}`);
@@ -316,6 +353,118 @@ export class NeuralBrushApp {
     this.state.setBrainStatus('ready');
   }
 
+  private restartBrain(): void {
+    if (!this.engineGraph || !this.modulation || this.disposed) return;
+
+    const previousWorker = this.brainWorker;
+    this.brainWorker = null;
+    if (previousWorker) {
+      try {
+        previousWorker.dispose();
+      } catch {
+        // A fatally crashed Worker may reject lifecycle messages during disposal.
+      }
+    }
+
+    const worker = this.createBrainWorker();
+    this.brainWorker = worker;
+    this.state.clearBrainError();
+    this.state.setBrainStatus('loading');
+    this.state.setBrainActivation(null);
+    this.state.setBehavior({ turn: 0, forward: 0, dwell: 1, arousal: 0 });
+    this.resetSensoryFeedback();
+    this.lastFrameTimeMs = null;
+
+    const modulation = this.modulation.snapshot();
+    try {
+      worker.init(this.engineGraph, this.brainSeed);
+      worker.setModulation(modulation);
+    } catch (cause) {
+      this.state.setBrainError(
+        this.errorMessage('Unable to restart neural runtime', cause),
+      );
+    }
+  }
+
+  private createBrainWorker(): BrainWorkerClient {
+    const worker = new BrainWorkerClient();
+    worker.onReady(() => {
+      if (this.disposed || this.brainWorker !== worker) return;
+      this.state.clearBrainError();
+      this.state.setBrainStatus('ready');
+    });
+    worker.onState(({ activation, behavior }) => {
+      if (this.disposed || this.brainWorker !== worker) return;
+      this.state.setBrainActivation(activation);
+      this.state.setBehavior(behavior);
+    });
+    worker.onError(({ message }) => {
+      if (this.disposed || this.brainWorker !== worker) return;
+      this.state.setBrainError(message);
+    });
+    return worker;
+  }
+
+  private shareBrainPreset(): string {
+    const preset = this.currentBrainPreset();
+    const encoded = PresetCodec.encode(preset);
+    writePresetFragment(encoded);
+    return window.location.href;
+  }
+
+  private exportBrainPreset(): void {
+    const blob = createPresetFileBlob(this.currentBrainPreset());
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = PRESET_FILE_NAME;
+    anchor.hidden = true;
+    document.body.append(anchor);
+    anchor.click();
+    anchor.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  }
+
+  private async importBrainPreset(file: File): Promise<void> {
+    if (!this.circuit) throw new Error('MaleCNS circuit is not loaded');
+    const parsed = await readPresetFile(file);
+    const preset = validatePreset(parsed, this.circuit);
+    this.applyLivePreset(preset);
+  }
+
+  private currentBrainPreset(): BrainPresetV1 {
+    if (!this.circuit || !this.modulation) {
+      throw new Error('Neural runtime is not ready');
+    }
+    return presetFromState(
+      this.circuit,
+      this.modulation,
+      this.brushMode,
+      this.brainSeed,
+    );
+  }
+
+  private applyLivePreset(preset: BrainPresetV1): void {
+    if (!this.circuit || !this.engineGraph || !this.modulation || !this.brainWorker) {
+      throw new Error('Neural runtime is not ready');
+    }
+
+    applyPresetToModulation(preset, this.circuit, this.modulation);
+    this.brainSeed = preset.seed;
+    this.brushMode = preset.brush;
+    this.canvasPanel.setBrushMode(this.brushMode);
+    this.flyController = new FlyController();
+    this.state.setBrainStatus('loading');
+    this.state.resetRuntime();
+    this.canvasPanel.updateFly(this.flyController.state);
+    this.resetSensoryFeedback();
+
+    const snapshot = this.modulation.snapshot();
+    this.brainPanel.syncModulationControls(snapshot);
+    this.brainWorker.init(this.engineGraph, this.brainSeed);
+    this.brainWorker.setModulation(snapshot);
+  }
+
   private mountDebugPanel(): void {
     const params = new URLSearchParams(window.location.search);
     if (params.get('debug') !== '1') return;
@@ -385,5 +534,10 @@ export class NeuralBrushApp {
       throw new Error('Neural runtime is not ready');
     }
     return { modulation: this.modulation, worker: this.brainWorker };
+  }
+
+  private errorMessage(prefix: string, cause: unknown): string {
+    const detail = cause instanceof Error ? cause.message : String(cause);
+    return `${prefix}: ${detail}`;
   }
 }

@@ -1,4 +1,5 @@
 import type { CircuitGraph } from '../brain/CircuitGraph';
+import type { ModulationSnapshot } from '../brain/BrainRuntimeTypes';
 
 export interface NeuronInspectorControls {
   onStimulate(bodyId: string, value: number): void;
@@ -12,10 +13,23 @@ interface InspectorState {
   gains: Map<number, number>;
 }
 
+function displayValue(value: number): number {
+  return Number(value.toFixed(6));
+}
+
+function defaultDisclosureOpen(): boolean {
+  return (
+    typeof window === 'undefined' ||
+    !window.matchMedia('(max-width: 799px)').matches
+  );
+}
+
 export class NeuronInspector {
   private host: HTMLElement | null = null;
   private selectedNeuronIndex = 0;
   private selectedEdgeIndex: number | null = null;
+  private sourceDisclosureOpen: boolean | null = null;
+  private simulationDisclosureOpen: boolean | null = null;
   private readonly state: InspectorState = {
     stimulation: new Map(),
     inhibition: new Map(),
@@ -43,6 +57,32 @@ export class NeuronInspector {
     }
     this.selectedNeuronIndex = index;
     this.selectedEdgeIndex = null;
+    this.render();
+  }
+
+  syncModulation(snapshot: ModulationSnapshot): void {
+    if (
+      snapshot.stimulation.length !== this.graph.metadata.neurons.length ||
+      snapshot.inhibition.length !== this.graph.metadata.neurons.length ||
+      snapshot.connectionGain.length !== this.graph.edges.length
+    ) {
+      throw new RangeError('modulation snapshot dimensions do not match inspector graph');
+    }
+
+    this.state.stimulation.clear();
+    this.state.inhibition.clear();
+    this.state.gains.clear();
+
+    this.graph.metadata.neurons.forEach((neuron, index) => {
+      const stimulation = displayValue(snapshot.stimulation[index] ?? 0);
+      const inhibition = displayValue(snapshot.inhibition[index] ?? 0);
+      if (stimulation > 0) this.state.stimulation.set(neuron.bodyId, stimulation);
+      if (inhibition > 0) this.state.inhibition.set(neuron.bodyId, inhibition);
+    });
+    this.graph.edges.forEach((_edge, edgeIndex) => {
+      const gain = displayValue(snapshot.connectionGain[edgeIndex] ?? 1);
+      if (gain !== 1) this.state.gains.set(edgeIndex, gain);
+    });
     this.render();
   }
 
@@ -93,10 +133,18 @@ export class NeuronInspector {
     });
     selectorLabel.append(selector);
 
-    const sourceSection = document.createElement('section');
+    const sourceSection = document.createElement('details');
     sourceSection.className = 'inspector-section';
+    sourceSection.open = this.sourceDisclosureOpen ?? defaultDisclosureOpen();
+    sourceSection.addEventListener('toggle', () => {
+      this.sourceDisclosureOpen = sourceSection.open;
+    });
+    const sourceSummary = document.createElement('summary');
     const sourceHeading = document.createElement('h3');
     sourceHeading.textContent = 'Source facts';
+    sourceSummary.append(sourceHeading);
+    sourceSection.append(sourceSummary);
+
     const facts = document.createElement('dl');
     facts.append(
       this.fact('Dataset', this.graph.metadata.dataset),
@@ -141,12 +189,20 @@ export class NeuronInspector {
         ? '—'
         : String(this.graph.sourceWeights[this.selectedEdgeIndex]);
     facts.append(this.fact('Raw source weight', rawWeight));
-    sourceSection.append(sourceHeading, selectorLabel, facts, edgeLabel);
+    sourceSection.append(selectorLabel, facts, edgeLabel);
 
-    const simulationSection = document.createElement('section');
+    const simulationSection = document.createElement('details');
     simulationSection.className = 'inspector-section';
+    simulationSection.open =
+      this.simulationDisclosureOpen ?? defaultDisclosureOpen();
+    simulationSection.addEventListener('toggle', () => {
+      this.simulationDisclosureOpen = simulationSection.open;
+    });
+    const simulationSummary = document.createElement('summary');
     const simulationHeading = document.createElement('h3');
     simulationHeading.textContent = 'Simulation controls';
+    simulationSummary.append(simulationHeading);
+    simulationSection.append(simulationSummary);
 
     const stimulation = this.rangeControl(
       'Stimulation',
@@ -189,7 +245,7 @@ export class NeuronInspector {
       gain.querySelector('input')?.setAttribute('disabled', 'true');
     }
 
-    simulationSection.append(simulationHeading, stimulation, inhibition, gain);
+    simulationSection.append(stimulation, inhibition, gain);
     root.append(sourceSection, simulationSection);
     this.host.replaceChildren(root);
   }

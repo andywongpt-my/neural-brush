@@ -1,6 +1,20 @@
 # Neural Brush Scientific Scope
 
-Neural Brush is a creative photo-editing system constrained by a selected MaleCNS connectome subgraph. This document separates **source connectome facts** from **Neural Brush modeling assumptions** so the application does not present creative behavior as reconstructed Drosophila physiology.
+Neural Brush is a creative photo-editing system constrained by a selected MaleCNS connectome subgraph. This document separates **connectome-derived source facts** from **Neural Brush modeling assumptions and artistic mappings** so the application does not present creative behavior as reconstructed Drosophila physiology.
+
+## Required scientific disclosure
+
+Neural Brush V1 uses a selected subgraph derived from MaleCNS `male-cns:v1.0`.
+
+Within that selected subgraph, source topology, neuron identifiers, source connection weights, and available annotations are connectome-derived. Neural Brush keeps those source facts separate from reversible runtime modulation and from the application-specific sensory, behavior, fly, and brush layers.
+
+The neural activity equations used by Neural Brush are **simplified modeling assumptions, not reconstructed electrophysiology**.
+
+Photo feature injection is a **synthetic sensory adapter**. It is not a reconstruction of the fly retina or proof that a photographed image biologically enters MaleCNS through the selected frontier neurons.
+
+`Smear`, `Saturation`, and `Glow` are **artistic mappings, not biological motor outputs**.
+
+Any future optional AI semantic vision would be **external synthetic modulation** and must be clearly labeled as such.
 
 ## Source-derived facts
 
@@ -13,35 +27,37 @@ Within the selected subgraph, Neural Brush preserves the following source-derive
 - directed connectivity,
 - source connection weight,
 - recorded soma-side metadata,
-- predicted neurotransmitter metadata.
+- predicted/consensus neurotransmitter metadata.
 
 The browser graph is a **selected subgraph**, not the complete male central nervous system. The current deterministic selection starts from DNa01/DNa02 seed types and expands two bounded incoming-partner hops according to [`circuit-selection.json`](../tools/malecns-export/circuit-selection.json).
 
-The packed source edge weights remain immutable at runtime. User controls operate through a separate modulation layer rather than overwriting the source graph.
+The packed source edge weights remain immutable at runtime. User controls operate through a separate `ModulationLayer`; connection gain is a multiplier over a source edge and never rewrites the packed source weight.
 
-## Neural Brush modeling boundaries
+## Frontier `inputPort`
 
-The following concepts are created by Neural Brush and must not be described as upstream connectome annotations.
+An `inputPort` marks a graph boundary in the selected Neural Brush subgraph: a selected node with no incoming edge from another selected node.
 
-### Frontier `inputPort`
+It does **not** mean that the neuron is a retinal neuron, photoreceptor, or verified visual-input neuron. The port is an application-facing boundary used by the synthetic sensory adapter.
 
-An `inputPort` marks a graph boundary in the selected Neural Brush subgraph: a selected node with no incoming edge from another selected node. It does **not** mean that the neuron is a retinal neuron, photoreceptor, or verified visual-input neuron.
+## Photo-derived sensory input
 
-### Photo-derived sensory input
+The live V1 loop samples the **currently edited image**, not merely the original source bitmap.
 
-Brightness, color, contrast, edges, and motion-like local features sampled from the user's photo are **synthetic external stimuli**. The V1 `SensoryAdapter` deterministically maps those values into selected circuit frontier nodes. That mapping is application logic, not a reconstruction of the fly retina or a claim that a photographed image enters the real MaleCNS through those exact neurons.
+`EditedImageSampler` reads a small local patch around the fly position from the GPU brush target. Brightness, local color, contrast, edge, and motion-like features are converted by `SensoryAdapter` into external simulation drive for selected circuit frontier nodes.
 
-Until the later GPU brush pipeline provides edited-pixel readback, Plan 3 samples the locally decoded source image. No image upload is required for this sensory path.
+These signals are synthetic external stimuli. Their mapping is Neural Brush application logic, not an upstream MaleCNS annotation or a reconstruction of the Drosophila visual system.
 
-Optional AI semantic masks, if introduced later, are also external synthetic modulation and must remain explicitly labeled as such.
+Because the edited texture is sampled again after brush changes, the fly's own artistic edits can alter subsequent sensory drive and therefore later neural/fly behavior. That closed loop is real software state, while its physiological interpretation remains bounded by the assumptions described here.
 
-### Behavior readouts
+Optional future AI semantic masks or object/scene understanding would also be external synthetic modulation and must remain explicit opt-in rather than being presented as a discovered MaleCNS pathway.
+
+## Behavior readouts
 
 DNa01/DNa02 are used as descending steering-centered seeds. Published physiology shows that activity in these bilateral neurons predicts steering, with the right-left activity difference related to rotational velocity; activity on one side is associated with ipsilateral steering. The exporter therefore uses source `somaSide` metadata to define `turnLeft` and `turnRight`, and it refuses to guess laterality when source metadata is insufficient.
 
 V1 deliberately leaves the source-data `forward` behavior port empty. DNa01/DNa02 are not treated as a verified forward-speed command. In the current runtime this makes the source-derived forward readout exactly `0`; `dwell` is then the explicit modeling relation `clamp01(1 - forward)`, so it is `1` when no verified forward port exists. These values keep the runtime interface stable but must not be described as discovered MaleCNS forward/dwell channels.
 
-The V1 behavior interface contains only:
+The V1 behavior interface contains:
 
 - `turn` — bounded right-minus-left steering readout,
 - `forward` — mean activity of verified forward ports, currently `0` because that port set is empty,
@@ -54,7 +70,7 @@ Reference: *Neural circuit mechanisms for steering control in walking Drosophila
 
 These behavior ports remain application-facing readout interfaces; they do not imply that MaleCNS itself contains Neural Brush-specific channels or artistic outputs.
 
-### Neural dynamics
+## Neural dynamics
 
 The V1 runtime uses simplified connectome-constrained dynamics in a Web Worker. Source topology and source weights constrain propagation, but the activation equation is a Neural Brush model rather than measured electrophysiology.
 
@@ -68,32 +84,61 @@ and propagates:
 
 where user `connectionGain` is a reversible modulation multiplier bounded to `0..2`. The packed source weight itself is never modified.
 
-Each neuron then receives synthetic external drive plus optional user stimulation/inhibition, passes the accumulated value through a sigmoid, approaches that target with a fixed logical time constant, and receives very small seeded bounded noise. The simulation advances at a fixed logical 60 Hz and publishes state at approximately 30 Hz; wall-clock scheduling does not change the logical timestep.
+Each neuron receives synthetic external drive plus optional user stimulation/inhibition, passes the accumulated value through a sigmoid, approaches that target using the runtime's simplified update rule, and receives very small seeded bounded noise.
 
-These constants and equations are modeling assumptions. This is **not** an electrophysiological reconstruction. The connectome alone does not uniquely specify membrane dynamics, receptor effects, neuromodulation, synaptic kinetics, or all other physiological parameters needed for such a reconstruction.
+The simulation advances at a fixed logical **60 Hz**, publishes worker state at approximately **30 Hz**, and receives edited-image sensory samples at **30 Hz**. Visible fly/brush rendering is driven by `requestAnimationFrame`; the Brain graph visualization is throttled independently.
 
-Predicted neurotransmitter labels are therefore shown as source metadata; Neural Brush must not blindly convert a neurotransmitter label into a universal excitatory/inhibitory sign without additional biological evidence.
+These constants and equations are modeling assumptions. Neural Brush is **not** an electrophysiological reconstruction. The connectome alone does not uniquely specify membrane dynamics, receptor effects, neuromodulation, synaptic kinetics, or the other physiological parameters needed for a complete reconstruction.
 
-### Artistic brush output
+Predicted neurotransmitter labels are therefore displayed as source metadata. Neural Brush does not blindly convert a neurotransmitter label into a universal excitatory/inhibitory sign without additional biological evidence.
 
-`Smear`, `Saturation`, and `Glow` are creative image-processing effects. The neural layer outputs behavior-level state; the later brush layer converts fly motion/state into artistic parameters.
+## Artistic brush output
+
+`Smear`, `Saturation`, and `Glow` are creative image-processing effects. The neural layer outputs behavior-level state; fly motion/state and application mapping logic drive artistic brush parameters.
 
 There is no claim that MaleCNS contains a “Smear neuron,” “Glow neuron,” or any biological output corresponding directly to a photo-editor effect.
 
-## Feedback loop
+`Blend` combines the artistic effects; it is likewise an application mode, not a biological state.
 
-Neural Brush is designed as a live closed interaction loop:
+## Live closed feedback loop
 
-1. the fly samples local features from the current image,
-2. the sensory adapter supplies external simulation input,
-3. activity propagates through the connectome-derived subgraph,
+The implemented V1 loop is:
+
+1. the fly samples local features from the current edited image,
+2. the synthetic sensory adapter supplies external simulation input,
+3. activity propagates through the MaleCNS-derived selected graph under simplified dynamics,
 4. behavior readouts update fly movement,
-5. fly movement drives the artistic brush,
-6. the edited pixels become the next visual sample.
+5. fly movement/state drives the artistic brush,
+6. the brush modifies the GPU image target,
+7. the edited pixels become the next local visual sample.
 
-Plan 3 implements steps 1–4 against the locally decoded source image. Plan 4 adds the artistic GPU brush and edited-pixel feedback required to close steps 5–6.
+This loop is continuous while the Brain is ready and a photo is loaded.
 
-The feedback loop is real application state, but its physiological interpretation remains limited by the modeling boundaries above.
+## User manipulation and source facts
+
+Users may:
+
+- stimulate a selected neuron,
+- inhibit a selected neuron,
+- scale the gain of an existing selected connection within `0..2×`,
+- choose brush mode,
+- save/share those deltas as a Brain Preset.
+
+Users do not, in V1:
+
+- add fake neurons,
+- arbitrarily rewire the graph,
+- overwrite source body IDs/types,
+- overwrite source connection weights,
+- convert artistic outputs into purported biological annotations.
+
+In short: users can alter **simulation state**, not rewrite **source facts**.
+
+## Privacy and scientific interpretation
+
+Static V1 processes the user's source photo locally in the browser. The photo is not part of the MaleCNS data, is not placed into Brain Presets/share fragments, and requires no backend or cloud photo store for the core app.
+
+This privacy boundary does not make the synthetic sensory mapping biologically real; it only describes where the user's image is processed.
 
 ## Recommended wording
 
@@ -103,11 +148,14 @@ Appropriate descriptions include:
 - “connectome-constrained simulation”
 - “selected MaleCNS subgraph”
 - “simplified neural dynamics”
+- “synthetic sensory adapter”
+- “artistic mapping”
 
 Avoid descriptions such as:
 
 - “complete fruit-fly brain simulation”
 - “full biological/electrophysiological reconstruction”
-- claims that Neural Brush artistic effects are native motor outputs of the fly nervous system.
+- “the fly literally sees the uploaded photo through these neurons”
+- claims that Neural Brush artistic effects are native biological motor outputs.
 
-For dataset provenance and licensing, see [`data-attribution.md`](data-attribution.md).
+For data provenance/licensing, see [`data-attribution.md`](data-attribution.md). For software data flow and timing, see [`architecture.md`](architecture.md).
