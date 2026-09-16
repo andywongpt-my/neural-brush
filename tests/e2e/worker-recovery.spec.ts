@@ -39,9 +39,7 @@ test('worker crash preserves artwork and current modulation until Restart Brain 
 }) => {
   await page.addInitScript(() => {
     const NativeWorker = window.Worker;
-    let latestProxy: {
-      onerror: ((event: ErrorEvent) => unknown) | null;
-    } | null = null;
+    let crashLatest: (() => void) | null = null;
 
     class WorkerProxy extends EventTarget {
       onmessage: ((event: MessageEvent<unknown>) => unknown) | null = null;
@@ -52,7 +50,14 @@ test('worker crash preserves artwork and current modulation until Restart Brain 
       constructor(scriptURL: string | URL, options?: WorkerOptions) {
         super();
         this.inner = new NativeWorker(scriptURL, options);
-        latestProxy = this;
+        crashLatest = () => {
+          if (!this.onerror) throw new Error('Brain worker error handler is unavailable');
+          this.onerror(
+            new ErrorEvent('error', {
+              message: 'synthetic worker crash',
+            }),
+          );
+        };
         this.inner.onmessage = (event) => this.onmessage?.(event);
         this.inner.onerror = (event) => this.onerror?.(event);
         this.inner.onmessageerror = (event) => this.onmessageerror?.(event);
@@ -70,12 +75,8 @@ test('worker crash preserves artwork and current modulation until Restart Brain 
 
     window.Worker = WorkerProxy as unknown as typeof Worker;
     window.__CRASH_BRAIN_WORKER__ = () => {
-      if (!latestProxy?.onerror) throw new Error('Brain worker error handler is unavailable');
-      latestProxy.onerror(
-        new ErrorEvent('error', {
-          message: 'synthetic worker crash',
-        }),
-      );
+      if (!crashLatest) throw new Error('Brain worker proxy is unavailable');
+      crashLatest();
     };
   });
 
