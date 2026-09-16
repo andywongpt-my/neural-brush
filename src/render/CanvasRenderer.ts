@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { AppError } from '../app/AppError';
 import { BrushPipeline } from '../brush/BrushPipeline';
 import type { BrushFrame, BrushMode } from '../brush/BrushTypes';
+import { ImageExporter } from '../export/ImageExporter';
 import { FlyRenderer } from '../fly/FlyRenderer';
 import type { FlyState } from '../fly/FlyTypes';
 import {
@@ -50,6 +51,10 @@ export class CanvasRenderer {
 
   get canvasElement(): HTMLCanvasElement {
     return this.renderer.domElement;
+  }
+
+  get hasImage(): boolean {
+    return this.sourceTexture !== null;
   }
 
   setImage(bitmap: ImageBitmap): void {
@@ -163,6 +168,28 @@ export class CanvasRenderer {
       hash = Math.imul(hash, 0x01000193);
     }
     return hash >>> 0;
+  }
+
+  exportPNG(): Promise<Blob> {
+    if (!this.sourceTexture) {
+      return Promise.reject(
+        new AppError('EXPORT_FAILED', new Error('No edited image is loaded')),
+      );
+    }
+    return ImageExporter.exportPNG(this.renderer, this.brushPipeline.currentTarget);
+  }
+
+  exportJPEG(quality = 0.92): Promise<Blob> {
+    if (!this.sourceTexture) {
+      return Promise.reject(
+        new AppError('EXPORT_FAILED', new Error('No edited image is loaded')),
+      );
+    }
+    return ImageExporter.exportJPEG(
+      this.renderer,
+      this.brushPipeline.currentTarget,
+      quality,
+    );
   }
 
   resetImage(): void {
