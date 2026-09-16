@@ -4,6 +4,9 @@ import type {
 } from './BrainPreset';
 
 export const PRESET_URL_MAX_JSON_BYTES = 16 * 1024;
+export const PRESET_URL_MAX_ENCODED_CHARS = Math.ceil(
+  (PRESET_URL_MAX_JSON_BYTES * 4) / 3,
+);
 
 export class PresetCodecError extends Error {
   constructor(message: string, options?: ErrorOptions) {
@@ -76,6 +79,9 @@ function bytesToBase64Url(bytes: Uint8Array): string {
 }
 
 function base64UrlToBytes(encoded: string): Uint8Array {
+  if (encoded.length > PRESET_URL_MAX_ENCODED_CHARS) {
+    throw new PresetCodecError('preset fragment exceeds the URL size limit');
+  }
   if (!BASE64URL_PATTERN.test(encoded)) {
     throw new PresetCodecError('preset fragment is not valid base64url');
   }

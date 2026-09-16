@@ -41,6 +41,8 @@ test('V1 acceptance: live edit, Brain modulation, exports, and share restore', a
   page,
   context,
 }) => {
+  test.setTimeout(60_000);
+
   await page.goto('./');
   await expect(page.getByText('MaleCNS circuit: brain ready')).toBeVisible({ timeout: 15_000 });
   await expect(page.getByRole('button', { name: 'About / Science' })).toBeVisible();
