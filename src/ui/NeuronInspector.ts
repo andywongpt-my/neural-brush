@@ -17,10 +17,19 @@ function displayValue(value: number): number {
   return Number(value.toFixed(6));
 }
 
+function defaultDisclosureOpen(): boolean {
+  return (
+    typeof window === 'undefined' ||
+    !window.matchMedia('(max-width: 799px)').matches
+  );
+}
+
 export class NeuronInspector {
   private host: HTMLElement | null = null;
   private selectedNeuronIndex = 0;
   private selectedEdgeIndex: number | null = null;
+  private sourceDisclosureOpen: boolean | null = null;
+  private simulationDisclosureOpen: boolean | null = null;
   private readonly state: InspectorState = {
     stimulation: new Map(),
     inhibition: new Map(),
@@ -124,10 +133,18 @@ export class NeuronInspector {
     });
     selectorLabel.append(selector);
 
-    const sourceSection = document.createElement('section');
+    const sourceSection = document.createElement('details');
     sourceSection.className = 'inspector-section';
+    sourceSection.open = this.sourceDisclosureOpen ?? defaultDisclosureOpen();
+    sourceSection.addEventListener('toggle', () => {
+      this.sourceDisclosureOpen = sourceSection.open;
+    });
+    const sourceSummary = document.createElement('summary');
     const sourceHeading = document.createElement('h3');
     sourceHeading.textContent = 'Source facts';
+    sourceSummary.append(sourceHeading);
+    sourceSection.append(sourceSummary);
+
     const facts = document.createElement('dl');
     facts.append(
       this.fact('Dataset', this.graph.metadata.dataset),
@@ -172,12 +189,20 @@ export class NeuronInspector {
         ? '—'
         : String(this.graph.sourceWeights[this.selectedEdgeIndex]);
     facts.append(this.fact('Raw source weight', rawWeight));
-    sourceSection.append(sourceHeading, selectorLabel, facts, edgeLabel);
+    sourceSection.append(selectorLabel, facts, edgeLabel);
 
-    const simulationSection = document.createElement('section');
+    const simulationSection = document.createElement('details');
     simulationSection.className = 'inspector-section';
+    simulationSection.open =
+      this.simulationDisclosureOpen ?? defaultDisclosureOpen();
+    simulationSection.addEventListener('toggle', () => {
+      this.simulationDisclosureOpen = simulationSection.open;
+    });
+    const simulationSummary = document.createElement('summary');
     const simulationHeading = document.createElement('h3');
     simulationHeading.textContent = 'Simulation controls';
+    simulationSummary.append(simulationHeading);
+    simulationSection.append(simulationSummary);
 
     const stimulation = this.rangeControl(
       'Stimulation',
@@ -220,7 +245,7 @@ export class NeuronInspector {
       gain.querySelector('input')?.setAttribute('disabled', 'true');
     }
 
-    simulationSection.append(simulationHeading, stimulation, inhibition, gain);
+    simulationSection.append(stimulation, inhibition, gain);
     root.append(sourceSection, simulationSection);
     this.host.replaceChildren(root);
   }
