@@ -47,12 +47,8 @@ async function canvasToBlob(
   mimeType: typeof PNG_MIME | typeof JPEG_MIME,
   quality?: number,
 ): Promise<Blob> {
-  const clamped = new Uint8ClampedArray(
-    pixels.buffer.slice(
-      pixels.byteOffset,
-      pixels.byteOffset + pixels.byteLength,
-    ),
-  );
+  const clamped = new Uint8ClampedArray(pixels.byteLength);
+  clamped.set(pixels);
   const imageData = new ImageData(clamped, width, height);
 
   if (typeof OffscreenCanvas !== 'undefined') {
