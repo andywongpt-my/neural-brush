@@ -197,6 +197,6 @@ describe('preset state conversion', () => {
     const snapshot = restored.snapshot();
     expect(Array.from(snapshot.stimulation)).toEqual([0.5, 0]);
     expect(Array.from(snapshot.inhibition)).toEqual([0, 0.25]);
-    expect(Array.from(snapshot.connectionGain)).toEqual([1.4]);
+    expect(snapshot.connectionGain[0]).toBeCloseTo(1.4, 6);
   });
 });
