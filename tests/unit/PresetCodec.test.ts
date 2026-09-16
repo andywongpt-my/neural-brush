@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { BrainPresetV1 } from '../../src/preset/BrainPreset';
 import {
+  PRESET_URL_MAX_ENCODED_CHARS,
   PresetCodec,
   PresetCodecError,
   readPresetFragment,
@@ -72,6 +73,15 @@ describe('PresetCodec', () => {
       ['9'.repeat(17_000)]: { stimulation: 0.1 },
     };
     expect(() => PresetCodec.encode(oversized)).toThrow(PresetCodecError);
+  });
+
+  it('rejects oversized encoded fragments before base64 decoding', () => {
+    const atobSpy = vi.spyOn(globalThis, 'atob');
+    expect(() =>
+      PresetCodec.decode('A'.repeat(PRESET_URL_MAX_ENCODED_CHARS + 1)),
+    ).toThrow(PresetCodecError);
+    expect(atobSpy).not.toHaveBeenCalled();
+    atobSpy.mockRestore();
   });
 
   it('parses only an exact preset fragment key', () => {
