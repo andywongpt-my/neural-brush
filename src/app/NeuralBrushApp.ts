@@ -32,6 +32,9 @@ export class NeuralBrushApp {
     onPause: () => this.pauseBrain(),
     onResume: () => this.resumeBrain(),
     onReset: () => this.resetBrain(),
+    onStimulate: (bodyId, value) => this.stimulateNeuron(bodyId, value),
+    onInhibit: (bodyId, value) => this.inhibitNeuron(bodyId, value),
+    onConnectionGain: (edgeIndex, value) => this.setConnectionGain(edgeIndex, value),
   });
   private readonly sensoryCadence = new SensoryCadence(SENSORY_RATE_HZ);
   private readonly canvasPanel = new CanvasPanel(
@@ -110,6 +113,7 @@ export class NeuralBrushApp {
     this.modulation.reset();
     this.brainWorker.reset();
     this.brainWorker.setModulation(this.modulation.snapshot());
+    this.brainPanel.resetModulationControls();
     this.flyController = new FlyController();
     this.state.resetRuntime();
     this.canvasPanel.updateFly(this.flyController.state);
@@ -166,6 +170,7 @@ export class NeuralBrushApp {
       this.engineGraph = engineGraph;
       this.modulation = modulation;
       this.brainWorker = worker;
+      this.brainPanel.setCircuit(circuit);
       worker.init(engineGraph, DEFAULT_BRAIN_SEED);
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : String(cause);
