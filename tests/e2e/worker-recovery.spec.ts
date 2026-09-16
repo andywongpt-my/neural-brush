@@ -1,15 +1,11 @@
 import { expect, test, type Page } from '@playwright/test';
 
-interface NeuralBrushTestApi {
-  editedChecksum(): number | null;
-}
-
-declare global {
-  interface Window {
-    __NEURAL_BRUSH_TEST__?: NeuralBrushTestApi;
-    __CRASH_BRAIN_WORKER__?: () => void;
-  }
-}
+type RecoveryWindow = Window & {
+  __NEURAL_BRUSH_TEST__?: {
+    editedChecksum(): number | null;
+  };
+  __CRASH_BRAIN_WORKER__?: () => void;
+};
 
 async function selectNeuronByType(page: Page, type: string): Promise<void> {
   await page.getByRole('combobox', { name: 'Neuron' }).evaluate(
@@ -38,6 +34,7 @@ test('worker crash preserves artwork and current modulation until Restart Brain 
   page,
 }) => {
   await page.addInitScript(() => {
+    const recoveryWindow = window as RecoveryWindow;
     const NativeWorker = window.Worker;
     let crashLatest: (() => void) | null = null;
 
@@ -74,7 +71,7 @@ test('worker crash preserves artwork and current modulation until Restart Brain 
     }
 
     window.Worker = WorkerProxy as unknown as typeof Worker;
-    window.__CRASH_BRAIN_WORKER__ = () => {
+    recoveryWindow.__CRASH_BRAIN_WORKER__ = () => {
       if (!crashLatest) throw new Error('Brain worker proxy is unavailable');
       crashLatest();
     };
@@ -89,11 +86,13 @@ test('worker crash preserves artwork and current modulation until Restart Brain 
   await setRange(page, 'Stimulation', '0.37');
 
   const readChecksum = () =>
-    page.evaluate(() => window.__NEURAL_BRUSH_TEST__?.editedChecksum() ?? null);
+    page.evaluate(
+      () => (window as RecoveryWindow).__NEURAL_BRUSH_TEST__?.editedChecksum() ?? null,
+    );
   await expect.poll(readChecksum).not.toBeNull();
   await page.waitForTimeout(200);
 
-  await page.evaluate(() => window.__CRASH_BRAIN_WORKER__?.());
+  await page.evaluate(() => (window as RecoveryWindow).__CRASH_BRAIN_WORKER__?.());
   await expect(page.getByText('MaleCNS circuit: error')).toBeVisible();
   await expect(page.getByRole('alert')).toContainText('Brain worker crashed: synthetic worker crash');
 
