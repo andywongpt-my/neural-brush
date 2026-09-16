@@ -11,6 +11,7 @@ export interface AppSnapshot {
   readonly behavior: Readonly<BehaviorState>;
   readonly fly: Readonly<FlyState>;
   readonly brainActivation: Float32Array | null;
+  readonly brainActivationRevision: number;
 }
 
 type AppStateListener = (snapshot: AppSnapshot) => void;
@@ -39,6 +40,7 @@ export class AppState {
   private behavior: BehaviorState = neutralBehavior();
   private fly: FlyState = initialFly();
   private brainActivation: Float32Array | null = null;
+  private brainActivationRevision = 0;
   private readonly listeners = new Set<AppStateListener>();
 
   setSplitRatio(value: number): void {
@@ -79,6 +81,7 @@ export class AppState {
 
   setBrainActivation(value: Float32Array | null): void {
     this.brainActivation = value?.slice() ?? null;
+    this.brainActivationRevision += 1;
     this.emit();
   }
 
@@ -87,6 +90,7 @@ export class AppState {
     this.behavior = neutralBehavior();
     this.fly = initialFly();
     this.brainActivation = null;
+    this.brainActivationRevision += 1;
     this.emit();
   }
 
@@ -106,6 +110,7 @@ export class AppState {
       behavior: { ...this.behavior },
       fly: { ...this.fly },
       brainActivation: this.brainActivation?.slice() ?? null,
+      brainActivationRevision: this.brainActivationRevision,
     };
   }
 
