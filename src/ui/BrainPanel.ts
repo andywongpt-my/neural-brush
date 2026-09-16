@@ -40,6 +40,7 @@ export class BrainPanel {
   private renderer: BrainRenderer | null = null;
   private inspector: NeuronInspector | null = null;
   private lastRenderedActivationRevision = -1;
+  private lastRenderedPresentationRevision = -1;
 
   constructor(
     private readonly state: AppState,
@@ -52,6 +53,7 @@ export class BrainPanel {
     this.renderer = null;
     this.inspector = null;
     this.lastRenderedActivationRevision = -1;
+    this.lastRenderedPresentationRevision = -1;
 
     const header = document.createElement('header');
     header.className = 'panel-header';
@@ -124,18 +126,26 @@ export class BrainPanel {
     resetButton.addEventListener('click', () => this.controls.onReset());
 
     const render = (snapshot: AppSnapshot): void => {
-      status.textContent = statusLabel(snapshot);
-      error.textContent = snapshot.brainError ?? '';
-      error.hidden = snapshot.brainError === null;
+      if (
+        snapshot.brainPresentationRevision !==
+        this.lastRenderedPresentationRevision
+      ) {
+        status.textContent = statusLabel(snapshot);
+        error.textContent = snapshot.brainError ?? '';
+        error.hidden = snapshot.brainError === null;
 
-      runButton.textContent = snapshot.brainStatus === 'paused' ? 'Resume' : 'Pause';
-      runButton.disabled = !['ready', 'paused'].includes(snapshot.brainStatus);
-      resetButton.disabled = !['ready', 'paused'].includes(snapshot.brainStatus);
+        runButton.textContent =
+          snapshot.brainStatus === 'paused' ? 'Resume' : 'Pause';
+        runButton.disabled = !['ready', 'paused'].includes(snapshot.brainStatus);
+        resetButton.disabled = !['ready', 'paused'].includes(snapshot.brainStatus);
 
-      metricElements.turn.value.textContent = formatMetric(snapshot.behavior.turn);
-      metricElements.forward.value.textContent = formatMetric(snapshot.behavior.forward);
-      metricElements.dwell.value.textContent = formatMetric(snapshot.behavior.dwell);
-      metricElements.arousal.value.textContent = formatMetric(snapshot.behavior.arousal);
+        metricElements.turn.value.textContent = formatMetric(snapshot.behavior.turn);
+        metricElements.forward.value.textContent = formatMetric(snapshot.behavior.forward);
+        metricElements.dwell.value.textContent = formatMetric(snapshot.behavior.dwell);
+        metricElements.arousal.value.textContent = formatMetric(snapshot.behavior.arousal);
+        this.lastRenderedPresentationRevision =
+          snapshot.brainPresentationRevision;
+      }
 
       const activation = snapshot.brainActivation;
       if (
@@ -172,6 +182,7 @@ export class BrainPanel {
     this.graphHost = null;
     this.inspectorHost = null;
     this.lastRenderedActivationRevision = -1;
+    this.lastRenderedPresentationRevision = -1;
   }
 
   private initializeGraph(): void {
