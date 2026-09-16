@@ -11,6 +11,22 @@ import type { BrushMode } from '../brush/BrushTypes';
 import { FlyController } from '../fly/FlyController';
 import type { FlyState } from '../fly/FlyTypes';
 import { FrameStats, type FrameSummary } from '../perf/FrameStats';
+import type { BrainPresetV1 } from '../preset/BrainPreset';
+import {
+  PresetCodec,
+  readPresetFragment,
+  writePresetFragment,
+} from '../preset/PresetCodec';
+import {
+  PRESET_FILE_NAME,
+  createPresetFileBlob,
+  readPresetFile,
+} from '../preset/PresetFileIO';
+import {
+  applyPresetToModulation,
+  presetFromState,
+  validatePreset,
+} from '../preset/PresetValidation';
 import {
   sampleEditedPatch,
   type ImageDataLike,
@@ -46,6 +62,9 @@ export class NeuralBrushApp {
     onStimulate: (bodyId, value) => this.stimulateNeuron(bodyId, value),
     onInhibit: (bodyId, value) => this.inhibitNeuron(bodyId, value),
     onConnectionGain: (edgeIndex, value) => this.setConnectionGain(edgeIndex, value),
+    onSharePreset: () => this.shareBrainPreset(),
+    onExportPreset: () => this.exportBrainPreset(),
+    onImportPreset: (file) => this.importBrainPreset(file),
   });
   private readonly sensoryCadence = new SensoryCadence(SENSORY_RATE_HZ);
   private readonly canvasPanel = new CanvasPanel(
@@ -67,6 +86,7 @@ export class NeuralBrushApp {
   private flyController = new FlyController();
   private previousEditedPatch: ImageDataLike | null = null;
   private brushMode: BrushMode = 'blend';
+  private brainSeed = DEFAULT_BRAIN_SEED;
   private animationFrameId: number | null = null;
   private lastFrameTimeMs: number | null = null;
   private lastDragTimeMs: number | null = null;
@@ -146,7 +166,7 @@ export class NeuralBrushApp {
     this.modulation.reset();
     this.brainWorker.reset();
     this.brainWorker.setModulation(this.modulation.snapshot());
-    this.brainPanel.resetModulationControls();
+    this.brainPanel.syncModulationControls(this.modulation.snapshot());
     this.flyController = new FlyController();
     this.state.resetRuntime();
     this.canvasPanel.updateFly(this.flyController.state);
@@ -184,6 +204,26 @@ export class NeuralBrushApp {
         engineGraph.nodeCount,
         engineGraph.weight.length,
       );
+      let presetWarning: string | null = null;
+      this.brainSeed = DEFAULT_BRAIN_SEED;
+      this.brushMode = 'blend';
+
+      const fragment = readPresetFragment();
+      if (fragment) {
+        try {
+          const preset = validatePreset(PresetCodec.decode(fragment), circuit);
+          applyPresetToModulation(preset, circuit, modulation);
+          this.brainSeed = preset.seed;
+          this.brushMode = preset.brush;
+        } catch (cause) {
+          modulation.reset();
+          presetWarning = this.errorMessage(
+            'Unable to restore shared Brain preset',
+            cause,
+          );
+        }
+      }
+
       const worker = new BrainWorkerClient();
 
       worker.onReady(() => {
@@ -206,7 +246,11 @@ export class NeuralBrushApp {
       this.modulation = modulation;
       this.brainWorker = worker;
       this.brainPanel.setCircuit(circuit);
-      worker.init(engineGraph, DEFAULT_BRAIN_SEED);
+      this.brainPanel.syncModulationControls(modulation.snapshot());
+      if (presetWarning) this.brainPanel.showPresetWarning(presetWarning);
+
+      worker.init(engineGraph, this.brainSeed);
+      worker.setModulation(modulation.snapshot());
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : String(cause);
       this.state.setBrainError(`Unable to start neural runtime: ${message}`);
@@ -316,6 +360,65 @@ export class NeuralBrushApp {
     this.state.setBrainStatus('ready');
   }
 
+  private shareBrainPreset(): string {
+    const preset = this.currentBrainPreset();
+    const encoded = PresetCodec.encode(preset);
+    writePresetFragment(encoded);
+    return window.location.href;
+  }
+
+  private exportBrainPreset(): void {
+    const blob = createPresetFileBlob(this.currentBrainPreset());
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = PRESET_FILE_NAME;
+    anchor.hidden = true;
+    document.body.append(anchor);
+    anchor.click();
+    anchor.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  }
+
+  private async importBrainPreset(file: File): Promise<void> {
+    if (!this.circuit) throw new Error('MaleCNS circuit is not loaded');
+    const parsed = await readPresetFile(file);
+    const preset = validatePreset(parsed, this.circuit);
+    this.applyLivePreset(preset);
+  }
+
+  private currentBrainPreset(): BrainPresetV1 {
+    if (!this.circuit || !this.modulation) {
+      throw new Error('Neural runtime is not ready');
+    }
+    return presetFromState(
+      this.circuit,
+      this.modulation,
+      this.brushMode,
+      this.brainSeed,
+    );
+  }
+
+  private applyLivePreset(preset: BrainPresetV1): void {
+    if (!this.circuit || !this.engineGraph || !this.modulation || !this.brainWorker) {
+      throw new Error('Neural runtime is not ready');
+    }
+
+    applyPresetToModulation(preset, this.circuit, this.modulation);
+    this.brainSeed = preset.seed;
+    this.brushMode = preset.brush;
+    this.flyController = new FlyController();
+    this.state.setBrainStatus('loading');
+    this.state.resetRuntime();
+    this.canvasPanel.updateFly(this.flyController.state);
+    this.resetSensoryFeedback();
+
+    const snapshot = this.modulation.snapshot();
+    this.brainPanel.syncModulationControls(snapshot);
+    this.brainWorker.init(this.engineGraph, this.brainSeed);
+    this.brainWorker.setModulation(snapshot);
+  }
+
   private mountDebugPanel(): void {
     const params = new URLSearchParams(window.location.search);
     if (params.get('debug') !== '1') return;
@@ -385,5 +488,10 @@ export class NeuralBrushApp {
       throw new Error('Neural runtime is not ready');
     }
     return { modulation: this.modulation, worker: this.brainWorker };
+  }
+
+  private errorMessage(prefix: string, cause: unknown): string {
+    const detail = cause instanceof Error ? cause.message : String(cause);
+    return `${prefix}: ${detail}`;
   }
 }
