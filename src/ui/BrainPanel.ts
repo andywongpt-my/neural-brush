@@ -13,6 +13,7 @@ export interface BrainPanelControls {
   onPause(): void;
   onResume(): void;
   onReset(): void;
+  onRestart(): void;
   onStimulate(bodyId: string, value: number): void;
   onInhibit(bodyId: string, value: number): void;
   onConnectionGain(edgeIndex: number, value: number): void;
@@ -96,7 +97,12 @@ export class BrainPanel {
     resetButton.type = 'button';
     resetButton.textContent = 'Reset';
 
-    controlsHost.append(runButton, resetButton);
+    const restartButton = document.createElement('button');
+    restartButton.type = 'button';
+    restartButton.textContent = 'Restart Brain';
+    restartButton.hidden = true;
+
+    controlsHost.append(runButton, resetButton, restartButton);
     header.append(identity, controlsHost);
 
     const status = document.createElement('p');
@@ -156,6 +162,7 @@ export class BrainPanel {
       else if (snapshot.brainStatus === 'paused') this.controls.onResume();
     });
     resetButton.addEventListener('click', () => this.controls.onReset());
+    restartButton.addEventListener('click', () => this.controls.onRestart());
 
     const render = (snapshot: AppSnapshot): void => {
       if (
@@ -170,6 +177,8 @@ export class BrainPanel {
           snapshot.brainStatus === 'paused' ? 'Resume' : 'Pause';
         runButton.disabled = !['ready', 'paused'].includes(snapshot.brainStatus);
         resetButton.disabled = !['ready', 'paused'].includes(snapshot.brainStatus);
+        restartButton.hidden = snapshot.brainStatus !== 'error';
+        restartButton.disabled = snapshot.brainStatus !== 'error';
 
         metricElements.turn.value.textContent = formatMetric(snapshot.behavior.turn);
         metricElements.forward.value.textContent = formatMetric(snapshot.behavior.forward);
