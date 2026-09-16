@@ -39,7 +39,6 @@ export class BrainPanel {
   private circuit: CircuitGraph | null = null;
   private renderer: BrainRenderer | null = null;
   private inspector: NeuronInspector | null = null;
-  private lastRenderedActivationRevision = -1;
   private lastRenderedPresentationRevision = -1;
 
   constructor(
@@ -52,7 +51,6 @@ export class BrainPanel {
     this.renderer?.dispose();
     this.renderer = null;
     this.inspector = null;
-    this.lastRenderedActivationRevision = -1;
     this.lastRenderedPresentationRevision = -1;
 
     const header = document.createElement('header');
@@ -127,36 +125,25 @@ export class BrainPanel {
 
     const render = (snapshot: AppSnapshot): void => {
       if (
-        snapshot.brainPresentationRevision !==
+        snapshot.brainPresentationRevision ===
         this.lastRenderedPresentationRevision
       ) {
-        status.textContent = statusLabel(snapshot);
-        error.textContent = snapshot.brainError ?? '';
-        error.hidden = snapshot.brainError === null;
-
-        runButton.textContent =
-          snapshot.brainStatus === 'paused' ? 'Resume' : 'Pause';
-        runButton.disabled = !['ready', 'paused'].includes(snapshot.brainStatus);
-        resetButton.disabled = !['ready', 'paused'].includes(snapshot.brainStatus);
-
-        metricElements.turn.value.textContent = formatMetric(snapshot.behavior.turn);
-        metricElements.forward.value.textContent = formatMetric(snapshot.behavior.forward);
-        metricElements.dwell.value.textContent = formatMetric(snapshot.behavior.dwell);
-        metricElements.arousal.value.textContent = formatMetric(snapshot.behavior.arousal);
-        this.lastRenderedPresentationRevision =
-          snapshot.brainPresentationRevision;
+        return;
       }
 
-      const activation = snapshot.brainActivation;
-      if (
-        this.renderer &&
-        activation !== null &&
-        activation.length === this.circuit?.metadata.neurons.length &&
-        snapshot.brainActivationRevision !== this.lastRenderedActivationRevision
-      ) {
-        this.renderer.updateActivation(activation);
-        this.lastRenderedActivationRevision = snapshot.brainActivationRevision;
-      }
+      status.textContent = statusLabel(snapshot);
+      error.textContent = snapshot.brainError ?? '';
+      error.hidden = snapshot.brainError === null;
+
+      runButton.textContent = snapshot.brainStatus === 'paused' ? 'Resume' : 'Pause';
+      runButton.disabled = !['ready', 'paused'].includes(snapshot.brainStatus);
+      resetButton.disabled = !['ready', 'paused'].includes(snapshot.brainStatus);
+
+      metricElements.turn.value.textContent = formatMetric(snapshot.behavior.turn);
+      metricElements.forward.value.textContent = formatMetric(snapshot.behavior.forward);
+      metricElements.dwell.value.textContent = formatMetric(snapshot.behavior.dwell);
+      metricElements.arousal.value.textContent = formatMetric(snapshot.behavior.arousal);
+      this.lastRenderedPresentationRevision = snapshot.brainPresentationRevision;
     };
 
     render(this.state.getSnapshot());
@@ -181,7 +168,6 @@ export class BrainPanel {
     this.inspector = null;
     this.graphHost = null;
     this.inspectorHost = null;
-    this.lastRenderedActivationRevision = -1;
     this.lastRenderedPresentationRevision = -1;
   }
 
@@ -189,7 +175,6 @@ export class BrainPanel {
     if (!this.circuit || !this.graphHost || !this.inspectorHost) return;
 
     this.renderer?.dispose();
-    this.lastRenderedActivationRevision = -1;
     const inspector = new NeuronInspector(
       this.circuit,
       {
@@ -206,12 +191,6 @@ export class BrainPanel {
       inspector.selectNeuron(index);
     });
     renderer.select(0);
-    const snapshot = this.state.getSnapshot();
-    const activation = snapshot.brainActivation;
-    if (activation?.length === this.circuit.metadata.neurons.length) {
-      renderer.updateActivation(activation);
-      this.lastRenderedActivationRevision = snapshot.brainActivationRevision;
-    }
 
     this.inspector = inspector;
     this.renderer = renderer;
