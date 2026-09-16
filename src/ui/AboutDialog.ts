@@ -31,7 +31,7 @@ export class AboutDialog {
 
     const intro = document.createElement('p');
     intro.textContent =
-      'Neural Brush uses a selected subgraph derived from MaleCNS male-cns:v1.0. Source topology, body IDs, source connection weights, and available annotations in that subgraph are connectome-derived.';
+      'Neural Brush uses a selected subgraph derived from MaleCNS male-cns:v1.0. Source topology, source neuron identifiers, source connection weights, and available annotations in that subgraph are connectome-derived.';
 
     const model = document.createElement('p');
     model.textContent =
