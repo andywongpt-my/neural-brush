@@ -77,6 +77,7 @@ export class NeuralBrushApp {
       onDragEnd: () => this.endFlyDrag(),
       onFollowTarget: (x, y) => this.flyController.setFollowTarget(x, y),
       onAutonomous: () => this.flyController.clearFollowTarget(),
+      onBrushMode: (mode) => this.setBrushMode(mode),
     },
     () => this.resetSensoryFeedback(),
   );
@@ -141,6 +142,7 @@ export class NeuralBrushApp {
 
   setBrushMode(mode: BrushMode): void {
     this.brushMode = mode;
+    this.canvasPanel.setBrushMode(mode);
   }
 
   getEditedChecksum(): number | null {
@@ -233,6 +235,7 @@ export class NeuralBrushApp {
       this.brainWorker = worker;
       this.brainPanel.setCircuit(circuit);
       this.brainPanel.syncModulationControls(modulation.snapshot());
+      this.canvasPanel.setBrushMode(this.brushMode);
       if (presetWarning) this.brainPanel.showPresetWarning(presetWarning);
 
       worker.init(engineGraph, this.brainSeed);
@@ -445,6 +448,7 @@ export class NeuralBrushApp {
     applyPresetToModulation(preset, this.circuit, this.modulation);
     this.brainSeed = preset.seed;
     this.brushMode = preset.brush;
+    this.canvasPanel.setBrushMode(this.brushMode);
     this.flyController = new FlyController();
     this.state.setBrainStatus('loading');
     this.state.resetRuntime();
