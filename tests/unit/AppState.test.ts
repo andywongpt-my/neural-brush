@@ -10,6 +10,7 @@ describe('AppState', () => {
     expect(snapshot.imageName).toBeNull();
     expect(snapshot.brainStatus).toBe('idle');
     expect(snapshot.brainError).toBeNull();
+    expect(snapshot.brainActivationRevision).toBe(0);
     expect(snapshot.behavior).toEqual({
       turn: 0,
       forward: 0,
@@ -71,6 +72,30 @@ describe('AppState', () => {
     expect(next.behavior.turn).toBe(0.5);
     expect(next.fly.x).toBe(0.2);
     expect(next.brainActivation?.[0]).toBeCloseTo(0.1);
+  });
+
+  it('increments activation revision only for neural activation changes', () => {
+    const state = new AppState();
+    expect(state.getSnapshot().brainActivationRevision).toBe(0);
+
+    state.setFly({
+      x: 0.4,
+      y: 0.5,
+      heading: 0,
+      speed: 0.1,
+      velocityX: 0.1,
+      velocityY: 0,
+    });
+    state.setBehavior({ turn: 0.2, forward: 0, dwell: 1, arousal: 0.3 });
+    expect(state.getSnapshot().brainActivationRevision).toBe(0);
+
+    state.setBrainActivation(new Float32Array([0.1, 0.2]));
+    expect(state.getSnapshot().brainActivationRevision).toBe(1);
+    state.setBrainActivation(new Float32Array([0.3, 0.4]));
+    expect(state.getSnapshot().brainActivationRevision).toBe(2);
+
+    state.resetRuntime();
+    expect(state.getSnapshot().brainActivationRevision).toBe(3);
   });
 
   it('stores and clears worker errors explicitly', () => {
