@@ -2,7 +2,7 @@
 
 Neural Brush is an open-source browser-based creative photo editor where a live fruit fly edits a user-supplied image while a MaleCNS-derived neural circuit is visualized and manipulated alongside it.
 
-> **Current status:** V1 feature implementation is substantially complete on the active development branch: the real MaleCNS-derived compact circuit, closed edited-image feedback loop, autonomous/direct fly control, Smear/Saturation/Glow/Blend, Brain modulation, Brain Preset sharing/import/export, PNG/JPEG export, optional WebM process recording, worker recovery, mobile hardening, and in-app Science/About disclosure are implemented and covered by automated tests. Final V1 release acceptance still requires the production GitHub Pages smoke flow and the real desktop-GPU 60-second performance measurement described in the implementation plan; this README does not mark the release production-ready yet.
+> **Current status:** V1 feature implementation and GitHub Pages production acceptance are complete. The deployed site has passed the automated production flow `upload → live edit → Brain modulation → PNG export → Brain Preset share/restore`. The remaining release-performance gate is the real desktop-GPU 60-second measurement described in the implementation plan; this README does not claim that performance certification has passed yet.
 
 The compact V1 circuit contains **151 neurons and 3,901 directed internal edges** and is about **78 KiB** uncompressed across the three runtime data files.
 
@@ -85,11 +85,11 @@ The repository is configured for the project Pages URL:
 
 Vite uses the project-site base path `/neural-brush/`. Pushes to `main` trigger the Pages build/deploy workflow.
 
-The final release checklist requires verifying the deployed app in a fresh browser with:
+After deployment, the workflow waits for the live Pages URL and runs the same production acceptance flow against the deployed site in a fresh Chromium session:
 
 `upload → live edit → Brain modulation → PNG export → Brain Preset share/restore`
 
-The repository should only be described as production-ready after that production smoke flow and the remaining performance acceptance have passed.
+That production Pages smoke passed on 2026-09-16. The remaining release-performance gate is the separate real desktop-GPU 60-second measurement with an approximately 1920×1080 image.
 
 ## Privacy contract
 
