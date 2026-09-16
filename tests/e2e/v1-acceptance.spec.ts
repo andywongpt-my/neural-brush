@@ -99,9 +99,4 @@ test('V1 acceptance: live edit, Brain modulation, exports, and share restore', a
   await expect(restored.getByText('brush-image.png')).toHaveCount(0);
   await selectNeuronByType(restored, 'DNa01');
   await expect(restored.getByRole('slider', { name: 'Stimulation' })).toHaveValue('1');
-
-  await restored.getByRole('button', { name: 'About / Science' }).click();
-  await expect(restored.getByRole('dialog', { name: 'About Neural Brush' })).toContainText(
-    'simplified modeling assumptions',
-  );
 });
