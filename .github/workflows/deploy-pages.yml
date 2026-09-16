@@ -38,7 +38,37 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     needs: build
     runs-on: ubuntu-latest
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
+
+  smoke:
+    name: Production V1 smoke
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Wait for deployed Pages URL
+        env:
+          PAGE_URL: ${{ needs.deploy.outputs.page_url }}
+        run: |
+          for attempt in {1..12}; do
+            if curl --fail --silent --show-error --location "$PAGE_URL" >/dev/null; then
+              exit 0
+            fi
+            sleep 5
+          done
+          exit 1
+      - name: Run deployed V1 acceptance flow
+        env:
+          NEURAL_BRUSH_E2E_BASE_URL: ${{ needs.deploy.outputs.page_url }}
+        run: npx playwright test tests/e2e/v1-acceptance.spec.ts
