@@ -126,6 +126,17 @@ export class CanvasPanel {
     return this.renderer?.readEditedPatch(xNorm, yNorm, radiusPx) ?? null;
   }
 
+  editedChecksum(): number | null {
+    return this.renderer?.editedChecksum() ?? null;
+  }
+
+  photoClientPoint(
+    xNorm: number,
+    yNorm: number,
+  ): { x: number; y: number } | null {
+    return this.renderer?.photoNormalizedToClient(xNorm, yNorm) ?? null;
+  }
+
   resetImage(): void {
     this.renderer?.resetImage();
   }
