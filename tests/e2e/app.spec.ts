@@ -20,6 +20,21 @@ test('boots the Brain-first workspace with a live MaleCNS worker', async ({ page
   await expect(page.getByText('MaleCNS circuit: brain ready')).toBeVisible();
 });
 
+test('renders the live MaleCNS graph with source facts separate from modulation controls', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByText('MaleCNS circuit: brain ready')).toBeVisible({ timeout: 10_000 });
+
+  await expect(page.locator('canvas.brain-canvas')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Source facts' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Simulation controls' })).toBeVisible();
+  await expect(page.getByRole('combobox', { name: 'Neuron' })).toBeVisible();
+  await expect(page.getByText('Dataset')).toBeVisible();
+  await expect(page.getByText('Body ID')).toBeVisible();
+  await expect(page.getByText('Neurotransmitter prediction')).toBeVisible();
+  await expect(page.getByLabel('Stimulation')).toBeVisible();
+  await expect(page.getByLabel('Inhibition')).toBeVisible();
+});
+
 test('loads a local image into the Three.js canvas while the brain remains ready', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByText('MaleCNS circuit: brain ready')).toBeVisible({ timeout: 10_000 });
