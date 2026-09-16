@@ -74,8 +74,8 @@ test('keeps the previous valid image when a later file is rejected', async ({ pa
 test('closes the live edit-brain-fly loop and exposes local performance diagnostics', async ({ page }) => {
   await page.goto('/?debug=1');
   await expect(page.getByText('MaleCNS circuit: brain ready')).toBeVisible({ timeout: 10_000 });
-  await page.getByLabel('Choose photo').setInputFiles('tests/fixtures/test-image.png');
-  await expect(page.getByText('test-image.png')).toBeVisible();
+  await page.getByLabel('Choose photo').setInputFiles('tests/fixtures/brush-image.png');
+  await expect(page.getByText('brush-image.png')).toBeVisible();
 
   await expect(page.getByTestId('debug-frame-average')).toBeVisible();
   await expect(page.getByTestId('debug-frame-p95')).toBeVisible();
