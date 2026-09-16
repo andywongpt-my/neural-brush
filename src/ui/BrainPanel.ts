@@ -136,7 +136,11 @@ export class BrainPanel {
       metricElements.arousal.value.textContent = formatMetric(snapshot.behavior.arousal);
 
       const activation = snapshot.brainActivation;
-      if (this.renderer && activation?.length === this.circuit?.metadata.neurons.length) {
+      if (
+        this.renderer &&
+        activation !== null &&
+        activation.length === this.circuit?.metadata.neurons.length
+      ) {
         this.renderer.updateActivation(activation);
       }
     };
