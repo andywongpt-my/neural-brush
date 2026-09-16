@@ -9,6 +9,8 @@ import {
   type ImageDataLike,
 } from '../vision/EditedImageSampler';
 
+const clamp01 = (value: number): number => Math.min(1, Math.max(0, value));
+
 export class CanvasRenderer {
   private readonly scene = new THREE.Scene();
   private readonly camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
@@ -93,8 +95,30 @@ export class CanvasRenderer {
     const photoLeft = rect.left + (this.viewportWidth - photoWidth) / 2;
     const photoTop = rect.top + (this.viewportHeight - photoHeight) / 2;
     return {
-      x: Math.min(1, Math.max(0, (clientX - photoLeft) / photoWidth)),
-      y: Math.min(1, Math.max(0, (clientY - photoTop) / photoHeight)),
+      x: clamp01((clientX - photoLeft) / photoWidth),
+      y: clamp01((clientY - photoTop) / photoHeight),
+    };
+  }
+
+  photoNormalizedToClient(
+    xNorm: number,
+    yNorm: number,
+  ): { x: number; y: number } | null {
+    if (!this.sourceTexture || this.plane.scale.x <= 0 || this.plane.scale.y <= 0) {
+      return null;
+    }
+    if (!Number.isFinite(xNorm) || !Number.isFinite(yNorm)) {
+      throw new RangeError('normalized photo coordinates must be finite');
+    }
+
+    const rect = this.renderer.domElement.getBoundingClientRect();
+    const photoWidth = this.plane.scale.x;
+    const photoHeight = this.plane.scale.y;
+    const photoLeft = rect.left + (this.viewportWidth - photoWidth) / 2;
+    const photoTop = rect.top + (this.viewportHeight - photoHeight) / 2;
+    return {
+      x: photoLeft + clamp01(xNorm) * photoWidth,
+      y: photoTop + clamp01(yNorm) * photoHeight,
     };
   }
 
@@ -116,6 +140,29 @@ export class CanvasRenderer {
       yNorm,
       radiusPx,
     );
+  }
+
+  editedChecksum(): number | null {
+    if (!this.sourceTexture || this.imageWidth <= 0 || this.imageHeight <= 0) {
+      return null;
+    }
+
+    const pixels = new Uint8Array(this.imageWidth * this.imageHeight * 4);
+    this.renderer.readRenderTargetPixels(
+      this.brushPipeline.currentTarget,
+      0,
+      0,
+      this.imageWidth,
+      this.imageHeight,
+      pixels,
+    );
+
+    let hash = 0x811c9dc5;
+    for (const byte of pixels) {
+      hash ^= byte;
+      hash = Math.imul(hash, 0x01000193);
+    }
+    return hash >>> 0;
   }
 
   resetImage(): void {
