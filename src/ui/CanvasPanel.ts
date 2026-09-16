@@ -40,13 +40,27 @@ export class CanvasPanel {
     subtitle.textContent = 'Live photo workspace';
     identity.append(title, subtitle);
 
+    const actionHost = document.createElement('div');
+    actionHost.className = 'canvas-actions';
+
     const autonomousButton = document.createElement('button');
     autonomousButton.type = 'button';
     autonomousButton.textContent = 'Autonomous';
     autonomousButton.dataset.testid = 'fly-autonomous';
     autonomousButton.addEventListener('click', () => this.flyControls?.onAutonomous());
 
-    header.append(identity, autonomousButton);
+    const exportPNGButton = document.createElement('button');
+    exportPNGButton.type = 'button';
+    exportPNGButton.textContent = 'Export PNG';
+    exportPNGButton.disabled = true;
+
+    const exportJPEGButton = document.createElement('button');
+    exportJPEGButton.type = 'button';
+    exportJPEGButton.textContent = 'Export JPEG';
+    exportJPEGButton.disabled = true;
+
+    actionHost.append(autonomousButton, exportPNGButton, exportJPEGButton);
+    header.append(identity, actionHost);
 
     const uploadHost = document.createElement('div');
     uploadHost.className = 'upload-drop-zone';
@@ -96,7 +110,15 @@ export class CanvasPanel {
 
     input.addEventListener('change', () => {
       const file = input.files?.[0];
-      if (file) void this.loadFile(file, imageName, error);
+      if (file) {
+        void this.loadFile(
+          file,
+          imageName,
+          error,
+          exportPNGButton,
+          exportJPEGButton,
+        );
+      }
     });
 
     uploadHost.addEventListener('dragover', (event) => {
@@ -106,7 +128,22 @@ export class CanvasPanel {
     uploadHost.addEventListener('drop', (event) => {
       event.preventDefault();
       const file = event.dataTransfer?.files[0];
-      if (file) void this.loadFile(file, imageName, error);
+      if (file) {
+        void this.loadFile(
+          file,
+          imageName,
+          error,
+          exportPNGButton,
+          exportJPEGButton,
+        );
+      }
+    });
+
+    exportPNGButton.addEventListener('click', () => {
+      void this.exportArtwork('png', error);
+    });
+    exportJPEGButton.addEventListener('click', () => {
+      void this.exportArtwork('jpeg', error);
     });
   }
 
@@ -213,7 +250,13 @@ export class CanvasPanel {
     };
   }
 
-  private async loadFile(file: File, imageName: HTMLElement, error: HTMLElement): Promise<void> {
+  private async loadFile(
+    file: File,
+    imageName: HTMLElement,
+    error: HTMLElement,
+    exportPNGButton: HTMLButtonElement,
+    exportJPEGButton: HTMLButtonElement,
+  ): Promise<void> {
     try {
       const nextBitmap = await ImageLoader.decode(file);
       this.renderer?.setImage(nextBitmap);
@@ -223,11 +266,46 @@ export class CanvasPanel {
       imageName.textContent = file.name;
       error.hidden = true;
       error.textContent = '';
+      exportPNGButton.disabled = false;
+      exportJPEGButton.disabled = false;
       this.onImageChanged?.();
     } catch (cause) {
       const appError = cause instanceof AppError ? cause : new AppError('IMAGE_DECODE', cause);
       error.textContent = appError.message;
       error.hidden = false;
     }
+  }
+
+  private async exportArtwork(
+    format: 'png' | 'jpeg',
+    error: HTMLElement,
+  ): Promise<void> {
+    try {
+      if (!this.renderer) throw new AppError('EXPORT_FAILED');
+      const blob =
+        format === 'png'
+          ? await this.renderer.exportPNG()
+          : await this.renderer.exportJPEG();
+      const filename = format === 'png' ? 'neural-brush.png' : 'neural-brush.jpg';
+      this.downloadBlob(blob, filename);
+      error.hidden = true;
+      error.textContent = '';
+    } catch (cause) {
+      const appError = cause instanceof AppError ? cause : new AppError('EXPORT_FAILED', cause);
+      error.textContent = appError.message;
+      error.hidden = false;
+    }
+  }
+
+  private downloadBlob(blob: Blob, filename: string): void {
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.hidden = true;
+    document.body.append(anchor);
+    anchor.click();
+    anchor.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
   }
 }
