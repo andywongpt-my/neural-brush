@@ -33,6 +33,7 @@ import {
 } from '../vision/EditedImageSampler';
 import { SensoryAdapter } from '../vision/SensoryAdapter';
 import { SensoryCadence } from '../vision/SensoryCadence';
+import { AboutDialog } from '../ui/AboutDialog';
 import { BrainPanel } from '../ui/BrainPanel';
 import { CanvasPanel } from '../ui/CanvasPanel';
 import { ErrorBanner } from '../ui/ErrorBanner';
@@ -55,6 +56,7 @@ interface DebugElements {
 export class NeuralBrushApp {
   private readonly state = new AppState();
   private readonly frameStats = new FrameStats();
+  private readonly aboutDialog = new AboutDialog();
   private readonly brainPanel = new BrainPanel(this.state, {
     onPause: () => this.pauseBrain(),
     onResume: () => this.resumeBrain(),
@@ -111,6 +113,7 @@ export class NeuralBrushApp {
       const { brainHost, canvasHost } = splitView.mount(this.host);
       this.brainPanel.mount(brainHost);
       this.canvasPanel.mount(canvasHost);
+      this.aboutDialog.mount(this.host);
       this.mountDebugPanel();
       this.startAnimationLoop();
       void this.initializeBrain();
@@ -186,6 +189,7 @@ export class NeuralBrushApp {
     }
     this.brainWorker?.dispose();
     this.brainWorker = null;
+    this.aboutDialog.dispose();
     this.brainPanel.dispose();
     this.canvasPanel.dispose();
     this.debugElements?.root.remove();
