@@ -47,3 +47,39 @@ test('downloads edited artwork as original-size PNG and JPEG files', async ({ pa
   await expect(page.getByText('brush-image.png')).toBeVisible();
   await expect(page.locator('canvas.photo-canvas')).toBeVisible();
 });
+
+test('records and downloads a WebM process video from the visible photo canvas', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByText('MaleCNS circuit: brain ready')).toBeVisible({ timeout: 10_000 });
+  await page.getByLabel('Choose photo').setInputFiles('tests/fixtures/brush-image.png');
+  await expect(page.getByText('brush-image.png')).toBeVisible();
+
+  const recordButton = page.getByRole('button', { name: 'Record Process' });
+  const stopButton = page.getByRole('button', { name: 'Stop Recording' });
+  const downloadButton = page.getByRole('button', { name: 'Download Recording' });
+
+  await expect(recordButton).toBeEnabled();
+  await expect(stopButton).toBeDisabled();
+  await expect(downloadButton).toBeDisabled();
+
+  await recordButton.click();
+  await expect(recordButton).toBeDisabled();
+  await expect(stopButton).toBeEnabled();
+  await expect(page.getByText('Recording process…')).toBeVisible();
+
+  await page.waitForTimeout(900);
+  await stopButton.click();
+  await expect(page.getByText('Recording ready to download.')).toBeVisible({ timeout: 5_000 });
+  await expect(downloadButton).toBeEnabled();
+
+  const download = await downloadFromButton(page, 'Download Recording');
+  expect(download.suggestedFilename()).toBe('neural-brush-process.webm');
+  const downloadPath = await download.path();
+  expect(downloadPath).not.toBeNull();
+  const bytes = await readFile(downloadPath!);
+  expect(bytes.length).toBeGreaterThan(128);
+  expect(Array.from(bytes.subarray(0, 4))).toEqual([0x1a, 0x45, 0xdf, 0xa3]);
+
+  await expect(page.getByRole('button', { name: 'Export PNG' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Export JPEG' })).toBeEnabled();
+});
