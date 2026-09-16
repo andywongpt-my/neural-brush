@@ -39,6 +39,7 @@ export class BrainPanel {
   private circuit: CircuitGraph | null = null;
   private renderer: BrainRenderer | null = null;
   private inspector: NeuronInspector | null = null;
+  private lastRenderedActivationRevision = -1;
 
   constructor(
     private readonly state: AppState,
@@ -50,6 +51,7 @@ export class BrainPanel {
     this.renderer?.dispose();
     this.renderer = null;
     this.inspector = null;
+    this.lastRenderedActivationRevision = -1;
 
     const header = document.createElement('header');
     header.className = 'panel-header';
@@ -139,9 +141,11 @@ export class BrainPanel {
       if (
         this.renderer &&
         activation !== null &&
-        activation.length === this.circuit?.metadata.neurons.length
+        activation.length === this.circuit?.metadata.neurons.length &&
+        snapshot.brainActivationRevision !== this.lastRenderedActivationRevision
       ) {
         this.renderer.updateActivation(activation);
+        this.lastRenderedActivationRevision = snapshot.brainActivationRevision;
       }
     };
 
@@ -167,12 +171,14 @@ export class BrainPanel {
     this.inspector = null;
     this.graphHost = null;
     this.inspectorHost = null;
+    this.lastRenderedActivationRevision = -1;
   }
 
   private initializeGraph(): void {
     if (!this.circuit || !this.graphHost || !this.inspectorHost) return;
 
     this.renderer?.dispose();
+    this.lastRenderedActivationRevision = -1;
     const inspector = new NeuronInspector(
       this.circuit,
       {
@@ -189,9 +195,11 @@ export class BrainPanel {
       inspector.selectNeuron(index);
     });
     renderer.select(0);
-    const activation = this.state.getSnapshot().brainActivation;
+    const snapshot = this.state.getSnapshot();
+    const activation = snapshot.brainActivation;
     if (activation?.length === this.circuit.metadata.neurons.length) {
       renderer.updateActivation(activation);
+      this.lastRenderedActivationRevision = snapshot.brainActivationRevision;
     }
 
     this.inspector = inspector;
