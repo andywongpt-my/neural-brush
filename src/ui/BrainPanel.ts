@@ -3,7 +3,9 @@ import { AppState, type AppSnapshot } from '../app/AppState';
 import type { CircuitGraph } from '../brain/CircuitGraph';
 import { BrainRenderCadence } from '../brain/BrainRenderCadence';
 import { BrainRenderer } from '../brain/BrainRenderer';
+import type { ModulationSnapshot } from '../brain/BrainRuntimeTypes';
 import { NeuronInspector } from './NeuronInspector';
+import { PresetControls } from './PresetControls';
 
 const BRAIN_RENDER_HZ = 12;
 
@@ -14,6 +16,9 @@ export interface BrainPanelControls {
   onStimulate(bodyId: string, value: number): void;
   onInhibit(bodyId: string, value: number): void;
   onConnectionGain(edgeIndex: number, value: number): void;
+  onSharePreset(): string;
+  onExportPreset(): void;
+  onImportPreset(file: File): Promise<void>;
 }
 
 function formatMetric(value: number): string {
@@ -35,6 +40,14 @@ function statusLabel(snapshot: AppSnapshot): string {
   }
 }
 
+function cloneModulation(snapshot: ModulationSnapshot): ModulationSnapshot {
+  return {
+    stimulation: snapshot.stimulation.slice(),
+    inhibition: snapshot.inhibition.slice(),
+    connectionGain: snapshot.connectionGain.slice(),
+  };
+}
+
 export class BrainPanel {
   private unsubscribe: (() => void) | null = null;
   private graphHost: HTMLElement | null = null;
@@ -42,6 +55,8 @@ export class BrainPanel {
   private circuit: CircuitGraph | null = null;
   private renderer: BrainRenderer | null = null;
   private inspector: NeuronInspector | null = null;
+  private presetControls: PresetControls | null = null;
+  private mirroredModulation: ModulationSnapshot | null = null;
   private readonly brainRenderCadence = new BrainRenderCadence(BRAIN_RENDER_HZ);
   private lastRenderedActivationRevision = -1;
   private lastRenderedPresentationRevision = -1;
@@ -56,6 +71,7 @@ export class BrainPanel {
     this.renderer?.dispose();
     this.renderer = null;
     this.inspector = null;
+    this.presetControls = null;
     this.brainRenderCadence.reset();
     this.lastRenderedActivationRevision = -1;
     this.lastRenderedPresentationRevision = -1;
@@ -106,6 +122,17 @@ export class BrainPanel {
       metricElements.arousal.root,
     );
 
+    const presetHost = document.createElement('div');
+    presetHost.className = 'preset-controls-host';
+    const presetControls = new PresetControls({
+      onShare: () => this.controls.onSharePreset(),
+      onExport: () => this.controls.onExportPreset(),
+      onImport: (file) => this.controls.onImportPreset(file),
+      onReset: () => this.controls.onReset(),
+    });
+    presetControls.mount(presetHost);
+    this.presetControls = presetControls;
+
     const workspace = document.createElement('div');
     workspace.className = 'brain-workspace';
 
@@ -121,7 +148,7 @@ export class BrainPanel {
     this.inspectorHost = inspectorHost;
 
     workspace.append(graphHost, inspectorHost);
-    host.replaceChildren(header, status, error, metrics, workspace);
+    host.replaceChildren(header, status, error, metrics, presetHost, workspace);
 
     runButton.addEventListener('click', () => {
       const snapshot = this.state.getSnapshot();
@@ -175,7 +202,17 @@ export class BrainPanel {
     this.initializeGraph();
   }
 
+  syncModulationControls(snapshot: ModulationSnapshot): void {
+    this.mirroredModulation = cloneModulation(snapshot);
+    this.inspector?.syncModulation(this.mirroredModulation);
+  }
+
+  showPresetWarning(message: string): void {
+    this.presetControls?.showWarning(message);
+  }
+
   resetModulationControls(): void {
+    this.mirroredModulation = null;
     this.inspector?.reset();
   }
 
@@ -185,8 +222,10 @@ export class BrainPanel {
     this.renderer?.dispose();
     this.renderer = null;
     this.inspector = null;
+    this.presetControls = null;
     this.graphHost = null;
     this.inspectorHost = null;
+    this.mirroredModulation = null;
     this.brainRenderCadence.reset();
     this.lastRenderedActivationRevision = -1;
     this.lastRenderedPresentationRevision = -1;
@@ -209,6 +248,9 @@ export class BrainPanel {
       (index) => this.renderer?.select(index),
     );
     inspector.mount(this.inspectorHost);
+    if (this.mirroredModulation) {
+      inspector.syncModulation(this.mirroredModulation);
+    }
 
     const renderer = new BrainRenderer(this.graphHost, this.circuit, (index) => {
       inspector.selectNeuron(index);
