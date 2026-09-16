@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { CircuitGraph } from './CircuitGraph';
 import { BrainLayout } from './BrainLayout';
-import { edgeVisualIntensity, nodeVisual } from './BrainVisuals';
+import { nodeVisual } from './BrainVisuals';
 
 const NODE_RADIUS = 0.035;
 
@@ -17,7 +17,7 @@ export class BrainRenderer {
   private readonly edgeMaterial = new THREE.LineBasicMaterial({
     vertexColors: true,
     transparent: true,
-    opacity: 0.72,
+    opacity: 0.5,
   });
   private readonly edges: THREE.LineSegments;
   private readonly raycaster = new THREE.Raycaster();
@@ -25,6 +25,7 @@ export class BrainRenderer {
   private readonly resizeObserver: ResizeObserver;
   private selectedIndex = 0;
   private disposed = false;
+  private lastActivation = new Float32Array(0);
 
   constructor(
     private readonly host: HTMLElement,
@@ -59,7 +60,12 @@ export class BrainRenderer {
       edgePositions[offset + 3] = this.positions[targetOffset];
       edgePositions[offset + 4] = this.positions[targetOffset + 1];
       edgePositions[offset + 5] = this.positions[targetOffset + 2];
-      edgeColors.fill(0.12, offset, offset + 6);
+      edgeColors[offset] = 0.08;
+      edgeColors[offset + 1] = 0.18;
+      edgeColors[offset + 2] = 0.22;
+      edgeColors[offset + 3] = 0.08;
+      edgeColors[offset + 4] = 0.18;
+      edgeColors[offset + 5] = 0.22;
     });
     this.edgeGeometry.setAttribute('position', new THREE.BufferAttribute(edgePositions, 3));
     this.edgeGeometry.setAttribute('color', new THREE.BufferAttribute(edgeColors, 3));
@@ -87,8 +93,6 @@ export class BrainRenderer {
     this.render();
   }
 
-  private lastActivation = new Float32Array(0);
-
   updateActivation(activation: Float32Array): void {
     if (activation.length !== this.graph.metadata.neurons.length) {
       throw new RangeError(
@@ -97,7 +101,6 @@ export class BrainRenderer {
     }
     this.lastActivation = activation.slice();
     this.renderNodes(activation);
-    this.renderEdges(activation);
     this.render();
   }
 
@@ -144,22 +147,6 @@ export class BrainRenderer {
     }
     this.nodes.instanceMatrix.needsUpdate = true;
     if (this.nodes.instanceColor) this.nodes.instanceColor.needsUpdate = true;
-  }
-
-  private renderEdges(activation: Float32Array): void {
-    const colorAttribute = this.edgeGeometry.getAttribute('color') as THREE.BufferAttribute;
-    this.graph.edges.forEach((edge, edgeIndex) => {
-      const intensity = edgeVisualIntensity(
-        activation[edge.sourceIndex] ?? 0,
-        edge.weight,
-      );
-      const r = 0.08 + intensity * 0.22;
-      const g = 0.11 + intensity * 0.66;
-      const b = 0.14 + intensity * 0.76;
-      colorAttribute.setXYZ(edgeIndex * 2, r, g, b);
-      colorAttribute.setXYZ(edgeIndex * 2 + 1, r, g, b);
-    });
-    colorAttribute.needsUpdate = true;
   }
 
   private resize(width: number, height: number): void {
