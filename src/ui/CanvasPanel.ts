@@ -19,7 +19,15 @@ export interface CanvasFlyControls {
   onDragEnd(): void;
   onFollowTarget(x: number, y: number): void;
   onAutonomous(): void;
+  onBrushMode(mode: BrushMode): void;
 }
+
+const BRUSH_MODES: ReadonlyArray<{ value: BrushMode; label: string }> = [
+  { value: 'blend', label: 'Blend' },
+  { value: 'smear', label: 'Smear' },
+  { value: 'saturation', label: 'Saturation' },
+  { value: 'glow', label: 'Glow' },
+];
 
 export class CanvasPanel {
   private renderer: CanvasRenderer | null = null;
@@ -29,6 +37,7 @@ export class CanvasPanel {
   private pointerCleanup: (() => void) | null = null;
   private readonly processRecorder = new ProcessRecorder();
   private recordedProcessBlob: Blob | null = null;
+  private brushModeSelect: HTMLSelectElement | null = null;
 
   constructor(
     private readonly state: AppState,
@@ -55,6 +64,25 @@ export class CanvasPanel {
     autonomousButton.textContent = 'Autonomous';
     autonomousButton.dataset.testid = 'fly-autonomous';
     autonomousButton.addEventListener('click', () => this.flyControls?.onAutonomous());
+
+    const brushModeLabel = document.createElement('label');
+    brushModeLabel.className = 'canvas-brush-mode';
+    const brushModeText = document.createElement('span');
+    brushModeText.textContent = 'Brush Mode';
+    const brushModeSelect = document.createElement('select');
+    brushModeSelect.setAttribute('aria-label', 'Brush Mode');
+    for (const mode of BRUSH_MODES) {
+      const option = document.createElement('option');
+      option.value = mode.value;
+      option.textContent = mode.label;
+      brushModeSelect.append(option);
+    }
+    brushModeSelect.value = 'blend';
+    brushModeSelect.addEventListener('change', () => {
+      this.flyControls?.onBrushMode(brushModeSelect.value as BrushMode);
+    });
+    brushModeLabel.append(brushModeText, brushModeSelect);
+    this.brushModeSelect = brushModeSelect;
 
     const exportPNGButton = document.createElement('button');
     exportPNGButton.type = 'button';
@@ -83,6 +111,7 @@ export class CanvasPanel {
 
     actionHost.append(
       autonomousButton,
+      brushModeLabel,
       exportPNGButton,
       exportJPEGButton,
       recordButton,
@@ -238,6 +267,10 @@ export class CanvasPanel {
     });
   }
 
+  setBrushMode(mode: BrushMode): void {
+    if (this.brushModeSelect) this.brushModeSelect.value = mode;
+  }
+
   applyBrush(frame: BrushFrame, mode: BrushMode): void {
     this.renderer?.applyBrush(frame, mode);
   }
@@ -283,6 +316,7 @@ export class CanvasPanel {
     this.renderer = null;
     this.bitmap?.close();
     this.bitmap = null;
+    this.brushModeSelect = null;
   }
 
   private bindPointerControls(): void {
